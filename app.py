@@ -1,310 +1,324 @@
-# app.py
-
-```python
 import streamlit as st
 import pandas as pd
+from pathlib import Path
 from datetime import datetime
 import uuid
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import current_timestamp
-from pyspark.sql.types import *
 
-# ============================================================
+# =====================================================
+
 # CONFIG
-# ============================================================
+
+# =====================================================
 
 st.set_page_config(
-    page_title="FIFA World Cup 2026 Match Poll",
-    page_icon="⚽",
-    layout="wide"
+page_title="FIFA World Cup 2026 Poll",
+page_icon="⚽",
+layout="wide"
 )
 
-FIXTURE_FILE = "/Workspace/Shared/FIFA2026_schedule_fixtures.csv"
+FIXTURE_PATH = "data/FIFA2026_schedule_fixtures.csv"
+VOTE_PATH = "data/votes.csv"
 
-DATABASE = "fifa_poll_db"
-TABLE = "match_votes"
+# =====================================================
 
-# ============================================================
-# SPARK SESSION
-# ============================================================
+# INITIALIZE
 
-spark = SparkSession.builder.getOrCreate()
+# =====================================================
 
-spark.sql(f"CREATE DATABASE IF NOT EXISTS {DATABASE}")
+Path("data").mkdir(exist_ok=True)
 
-spark.sql(f"""
-CREATE TABLE IF NOT EXISTS {DATABASE}.{TABLE}
-(
-vote_id STRING,
-match_number STRING,
-match_date STRING,
-team_vote STRING,
-user_session STRING,
-vote_timestamp TIMESTAMP
-)
-USING DELTA
-""")
+if not Path(VOTE_PATH).exists():
+pd.DataFrame(
+columns=[
+"vote_id",
+"match_number",
+"date",
+"team",
+"username",
+"timestamp",
+]
+).to_csv(VOTE_PATH, index=False)
 
-# ============================================================
-# LOAD FIXTURE
-# ============================================================
+# =====================================================
+
+# LOAD FUNCTIONS
+
+# =====================================================
 
 @st.cache_data
 def load_fixture():
+df = pd.read_csv(FIXTURE_PATH)
 
-    df = pd.read_csv(FIXTURE_FILE)
+```
+df["date_dt"] = pd.to_datetime(
+    df["date_dt"],
+    format="%d-%m-%Y",
+    errors="coerce",
+)
 
-    df["date_dt"] = pd.to_datetime(
-        df["date_dt"],
-        format="%d-%m-%Y"
-    )
+return df
+```
 
-    return df
+def load_votes():
+return pd.read_csv(VOTE_PATH)
 
+def save_vote(vote):
 
-fixture_df = load_fixture()
+```
+votes = load_votes()
 
-# ============================================================
-# GET TODAY MATCHES
-# ============================================================
+votes = pd.concat(
+    [votes, pd.DataFrame([vote])],
+    ignore_index=True
+)
+
+votes.to_csv(
+    VOTE_PATH,
+    index=False
+)
+
+st.cache_data.clear()
+```
+
+# =====================================================
+
+# LOAD DATA
+
+# =====================================================
+
+fixture = load_fixture()
 
 today = pd.Timestamp.now().normalize()
 
-today_matches = fixture_df[
-    fixture_df["date_dt"] == today
+today_matches = fixture[
+fixture["date_dt"].dt.normalize()
+== today
 ]
 
-# ============================================================
-# SAVE VOTE
-# ============================================================
+# =====================================================
 
-def save_vote(
-    match_number,
-    match_date,
-    selected_team,
-    session_id
-):
-
-    existing = spark.sql(f"""
-    SELECT *
-    FROM {DATABASE}.{TABLE}
-    WHERE user_session='{session_id}'
-    AND match_number='{match_number}'
-    """)
-
-    if existing.count() > 0:
-        return False
-
-    vote = [
-        (
-            str(uuid.uuid4()),
-            match_number,
-            match_date,
-            selected_team,
-            session_id,
-            datetime.now()
-        )
-    ]
-
-    schema = StructType([
-        StructField("vote_id",StringType()),
-        StructField("match_number",StringType()),
-        StructField("match_date",StringType()),
-        StructField("team_vote",StringType()),
-        StructField("user_session",StringType()),
-        StructField("vote_timestamp",TimestampType())
-    ])
-
-    sdf = spark.createDataFrame(vote,schema)
-
-    (
-        sdf.write
-        .format("delta")
-        .mode("append")
-        .saveAsTable(
-            f"{DATABASE}.{TABLE}"
-        )
-    )
-
-    return True
-
-
-# ============================================================
-# RESULTS
-# ============================================================
-
-def get_results(match_number):
-
-    q = f"""
-    SELECT
-    team_vote,
-    COUNT(*) votes
-    FROM {DATABASE}.{TABLE}
-    WHERE match_number='{match_number}'
-    GROUP BY team_vote
-    """
-
-    return spark.sql(q).toPandas()
-
-
-# ============================================================
 # UI
-# ============================================================
 
-st.title("🏆 FIFA World Cup 2026 Daily Poll")
+# =====================================================
 
-st.markdown(
-"""
-Vote only on match day.
-Polls are generated automatically.
-"""
+st.title("🏆 FIFA World Cup 2026 Match Poll")
+
+username = st.text_input(
+"Enter username"
 )
 
-if "session_id" not in st.session_state:
-    st.session_state.session_id = str(
-        uuid.uuid4()
+if not username:
+st.info("Enter a username to vote.")
+st.stop()
+
+# =====================================================
+
+# NO MATCH TODAY
+
+# =====================================================
+
+if today_matches.empty:
+
+```
+st.success("No FIFA World Cup match scheduled today.")
+
+upcoming = (
+    fixture[
+        fixture["date_dt"] > today
+    ]
+    .sort_values("date_dt")
+    .head(10)
+)
+
+st.subheader("Upcoming Matches")
+
+st.dataframe(
+    upcoming[
+        [
+            "date_dt",
+            "team 1",
+            "team 2",
+            "stadium",
+        ]
+    ]
+)
+
+st.stop()
+```
+
+# =====================================================
+
+# MATCH POLLS
+
+# =====================================================
+
+votes = load_votes()
+
+for _, match in today_matches.iterrows():
+
+```
+st.divider()
+
+match_id = str(match["match_number"])
+
+team1 = match["team 1"]
+team2 = match["team 2"]
+
+st.subheader(
+    f"{team1} vs {team2}"
+)
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric(
+    "Group",
+    match["group"]
+)
+
+col2.metric(
+    "Stadium",
+    match["stadium"]
+)
+
+col3.metric(
+    "Match",
+    match_id
+)
+
+already = votes[
+    (votes["username"] == username)
+    &
+    (
+        votes["match_number"]
+        .astype(str)
+        == match_id
+    )
+]
+
+if already.empty:
+
+    selection = st.radio(
+        "Vote:",
+        [
+            team1,
+            team2,
+            "Draw"
+        ],
+        key=f"vote_{match_id}"
     )
 
-session_id = st.session_state.session_id
+    if st.button(
+        "Submit Vote",
+        key=f"submit_{match_id}"
+    ):
 
-if len(today_matches) == 0:
+        save_vote({
 
-    st.success(
-        "No FIFA World Cup matches today."
-    )
+            "vote_id":
+            str(uuid.uuid4()),
+
+            "match_number":
+            match_id,
+
+            "date":
+            str(today.date()),
+
+            "team":
+            selection,
+
+            "username":
+            username,
+
+            "timestamp":
+            datetime.utcnow()
+        })
+
+        st.success(
+            "Vote recorded."
+        )
+
+        st.rerun()
 
 else:
 
-    st.subheader(
-        f"Today's Matches ({len(today_matches)})"
+    st.warning(
+        "You already voted."
     )
 
-    for idx,row in today_matches.iterrows():
+# RESULTS
 
-        match_id = row["match_number"]
+current = load_votes()
 
-        team1 = row["team 1"]
-        team2 = row["team 2"]
+current = current[
+    current["match_number"]
+    .astype(str)
+    == match_id
+]
 
-        with st.container():
+if len(current):
 
-            st.markdown("---")
+    st.subheader(
+        "Live Results"
+    )
 
-            st.header(
-                f"{team1} vs {team2}"
-            )
+    results = (
+        current["team"]
+        .value_counts()
+        .reset_index()
+    )
 
-            st.caption(
-                f"""
-                Match:
-                {match_id}
+    results.columns = [
+        "Selection",
+        "Votes"
+    ]
 
-                Group:
-                {row['group']}
+    total = results["Votes"].sum()
 
-                Stadium:
-                {row['stadium']}
-                """
-            )
+    results["Percent"] = (
+        results["Votes"]
+        / total
+        * 100
+    ).round(2)
 
-            poll = st.radio(
-                "Who will win?",
-                [
-                    team1,
-                    team2
-                ],
-                key=f"poll_{idx}"
-            )
+    st.dataframe(
+        results,
+        use_container_width=True
+    )
 
-            if st.button(
-                "Submit Vote",
-                key=f"vote_{idx}"
-            ):
+    st.bar_chart(
+        results.set_index(
+            "Selection"
+        )["Votes"]
+    )
+```
 
-                ok = save_vote(
-                    match_id,
-                    str(
-                        row["date_dt"].date()
-                    ),
-                    poll,
-                    session_id
-                )
+# =====================================================
 
-                if ok:
-                    st.success(
-                        "Vote stored."
-                    )
-
-                else:
-                    st.warning(
-                        "You already voted."
-                    )
-
-            st.markdown(
-                "### Live Results"
-            )
-
-            results = get_results(
-                match_id
-            )
-
-            if len(results):
-
-                total = results[
-                    "votes"
-                ].sum()
-
-                results[
-                    "percent"
-                ] = (
-                    results["votes"]
-                    / total
-                    * 100
-                )
-
-                st.dataframe(
-                    results
-                )
-
-                for _,r in results.iterrows():
-
-                    st.progress(
-                        int(
-                            r["percent"]
-                        )
-                    )
-
-                    st.write(
-                        f"""
-                        {r['team_vote']}
-                        —
-                        {r['percent']:.1f}%
-                        """
-                    )
-
-            else:
-
-                st.info(
-                    "No votes yet."
-                )
-
-# ============================================================
 # HISTORY
-# ============================================================
 
-st.markdown("---")
+# =====================================================
 
-if st.checkbox(
-    "Show Historical Votes"
-):
+st.divider()
 
-    hist = spark.sql(
-        f"""
-        SELECT *
-        FROM {DATABASE}.{TABLE}
-        ORDER BY vote_timestamp DESC
-        """
-    ).toPandas()
+st.subheader(
+"Recent Votes"
+)
 
-    st.dataframe(hist)
+history = load_votes()
+
+if len(history):
+
+```
+st.dataframe(
+    history.tail(50),
+    use_container_width=True
+)
+```
+
+else:
+
+```
+st.info(
+    "No votes yet."
+)
 ```
