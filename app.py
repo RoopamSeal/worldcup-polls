@@ -6,31 +6,34 @@ import uuid
 
 st.set_page_config(
 page_title="FIFA World Cup Poll",
-page_icon="⚽"
+page_icon="⚽",
+layout="wide"
 )
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
-FIXTURE = "data/FIFA2026_schedule_fixtures.csv"
-VOTES = "data/votes.csv"
+FIXTURE_FILE = "data/FIFA2026_schedule_fixtures.csv"
+VOTES_FILE = "data/votes.csv"
 
-# create votes file
+# Create votes file automatically
 
-if not Path(VOTES).exists():
-df = pd.DataFrame(
-columns=[
-"vote_id",
-"match_number",
-"username",
-"prediction",
-"timestamp"
-]
-)
+try:
+pd.read_csv(VOTES_FILE)
+
+except:
 
 ```
-df.to_csv(
-    VOTES,
+pd.DataFrame(
+    columns=[
+        "vote_id",
+        "match_number",
+        "username",
+        "prediction",
+        "timestamp"
+    ]
+).to_csv(
+    VOTES_FILE,
     index=False
 )
 ```
@@ -39,7 +42,7 @@ df.to_csv(
 def load_fixture():
 
 ```
-df = pd.read_csv(FIXTURE)
+df = pd.read_csv(FIXTURE_FILE)
 
 df["date_dt"] = pd.to_datetime(
     df["date_dt"],
@@ -53,18 +56,22 @@ return df
 def load_votes():
 
 ```
-return pd.read_csv(VOTES)
+return pd.read_csv(
+    VOTES_FILE
+)
 ```
 
-def save_vote(data):
+def save_vote(record):
 
 ```
 votes = load_votes()
 
-votes.loc[len(votes)] = data
+votes.loc[
+    len(votes)
+] = record
 
 votes.to_csv(
-    VOTES,
+    VOTES_FILE,
     index=False
 )
 ```
@@ -73,123 +80,128 @@ st.title(
 "🏆 FIFA World Cup 2026 Poll"
 )
 
-user = st.text_input(
-"Enter username"
+username = st.text_input(
+"Username"
 )
 
-if user == "":
+if username == "":
 st.stop()
 
-fixture = load_fixture()
+fixtures = load_fixture()
 
 today = pd.Timestamp.today().normalize()
 
-matches = fixture[
-fixture["date_dt"].dt.normalize()
+today_games = fixtures[
+fixtures["date_dt"].dt.normalize()
 == today
 ]
 
-if matches.empty:
+if len(today_games) == 0:
 
 ```
 st.info(
-    "No match today"
+    "No matches today."
 )
+
+st.stop()
 ```
 
-else:
-
-```
 votes = load_votes()
 
-for _, match in matches.iterrows():
+for _, game in today_games.iterrows():
 
-    match_id = str(
-        match["match_number"]
+```
+match_id = str(
+    game["match_number"]
+)
+
+team1 = game["team 1"]
+team2 = game["team 2"]
+
+st.subheader(
+    f"{team1} vs {team2}"
+)
+
+already = votes[
+    (
+        votes["username"]
+        == username
     )
-
-    t1 = match["team 1"]
-    t2 = match["team 2"]
-
-    st.subheader(
-        f"{t1} vs {t2}"
-    )
-
-    previous = votes[
-        (
-            votes["username"]
-            == user
-        )
-        &
-        (
-            votes[
-                "match_number"
-            ].astype(str)
-            == match_id
-        )
-    ]
-
-    if previous.empty:
-
-        choice = st.radio(
-            "Predict winner",
-            [
-                t1,
-                t2,
-                "Draw"
-            ],
-            key=match_id
-        )
-
-        if st.button(
-            "Submit",
-            key=match_id
-        ):
-
-            save_vote([
-
-                str(
-                    uuid.uuid4()
-                ),
-
-                match_id,
-
-                user,
-
-                choice,
-
-                str(
-                    datetime.now()
-                )
-
-            ])
-
-            st.success(
-                "Vote saved"
-            )
-
-            st.rerun()
-
-    else:
-
-        st.warning(
-            "Already voted"
-        )
-
-    result = load_votes()
-
-    result = result[
-        result[
+    &
+    (
+        votes[
             "match_number"
         ].astype(str)
         == match_id
-    ]
+    )
+]
 
-    if len(result):
+if len(already) == 0:
 
-        st.bar_chart(
-            result[
-                "prediction"
-            ].value_counts()
+    choice = st.radio(
+        "Prediction",
+        [
+            team1,
+            team2,
+            "Draw"
+        ],
+        key=match_id
+    )
+
+    if st.button(
+        "Vote",
+        key=match_id
+    ):
+
+        save_vote([
+
+            str(
+                uuid.uuid4()
+            ),
+
+            match_id,
+
+            username,
+
+            choice,
+
+            str(
+                datetime.now()
+            )
+
+        ])
+
+        st.success(
+            "Vote saved"
         )
+
+        st.rerun()
+
+else:
+
+    st.warning(
+        "Already voted"
+    )
+
+result = load_votes()
+
+result = result[
+    result[
+        "match_number"
+    ].astype(str)
+    == match_id
+]
+
+if len(result):
+
+    chart = (
+        result[
+            "prediction"
+        ]
+        .value_counts()
+    )
+
+    st.bar_chart(
+        chart
+    )
 ```
