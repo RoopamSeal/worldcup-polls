@@ -1,101 +1,171 @@
 import streamlit as st
 import pandas as pd
-import time
+from pathlib import Path
+from datetime import datetime
+import uuid
 
-# --- Configuration & Styling ---
+# ==========================================
+# 1. PAGE SETUP & CONFIGURATION
+# ==========================================
 st.set_page_config(
     page_title="FIFA World Cup 2026 Poll",
     page_icon="⚽",
-    layout="wide" 
+    layout="wide"  # Needed for side-by-side layout (Polls vs Leaderboard)
 )
 
-# Custom CSS to make the interface feel more engaging and pad the columns
-st.markdown("""
-    <style>
-    .stRadio > label { font-size: 18px; font-weight: bold; }
-    .leaderboard-header { font-size: 24px; font-weight: bold; color: #FFD700; }
-    </style>
-""", unsafe_allow_html=True)
+# File Paths based on image_91f1ec.png
+FIXTURE_FILE = Path("data/FIFA2026_schedule_fixtures.csv")
+VOTES_FILE = Path("data/votes.csv")
 
-# --- Layout: 2 Columns (Left: Polls, Right: Leaderboard) ---
-# The left column is wider (ratio 2:1)
+# Ensure directories exist
+FIXTURE_FILE.parent.mkdir(exist_ok=True)
+
+# Automatically initialize votes.csv with the exact requested columns if missing/empty
+if not VOTES_FILE.exists() or VOTES_FILE.stat().st_size == 0:
+    pd.DataFrame(
+        columns=[
+            "vote_id",
+            "match_number",
+            "username",
+            "prediction",
+            "timestamp",
+            "score"
+        ]
+    ).to_csv(VOTES_FILE, index=False)
+
+# ==========================================
+# 2. DATA LOADERS & MUTATORS
+# ==========================================
+@st.cache_data(ttl=60)  # Caches for 1 minute to stay resource-friendly but responsive
+def load_fixtures():
+    try:
+        df = pd.read_csv(FIXTURE_FILE)
+        # Parse dates uniformly (adjust format string if your file uses a different delimiter/order)
+        df["date_dt"] = pd.to_datetime(df["date_dt"], errors="coerce")
+        return df
+    except FileNotFoundError:
+        st.error(f"⚠️ Fixtures file missing at `{FIXTURE_FILE}`. Please upload it to your data directory.")
+        st.stop()
+
+def load_votes():
+    try:
+        return pd.read_csv(VOTES_FILE)
+    except Exception:
+        # Fallback if file gets corrupted
+        return pd.DataFrame(columns=["vote_id", "match_number", "username", "prediction", "timestamp", "score"])
+
+def save_vote(match_number, username, prediction):
+    votes = load_votes()
+    
+    # Create the record matching your requested database schema
+    new_record = {
+        "vote_id": str(uuid.uuid4()),
+        "match_number": str(match_number),
+        "username": username.strip(),
+        "prediction": prediction,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "score": 0  # Initialized to 0. Updated to 10 points when match outcome is resolved.
+    }
+    
+    # Append and save
+    votes = pd.concat([votes, pd.DataFrame([new_record])], ignore_index=True)
+    votes.to_csv(VOTES_FILE, index=False)
+
+# ==========================================
+# 3. INTERACTIVE USER INTERFACE
+# ==========================================
+
+# Divide layout into two columns: Left for Polls, Right for Leaderboard
 left_col, right_col = st.columns([2, 1], gap="large")
 
-# ==========================================
-# LEFT COLUMN: Polling Interface
-# ==========================================
+# --- LEFT COLUMN: MATCH POLLS ---
 with left_col:
     st.title("🏆 FIFA World Cup 2026 Poll")
     
-    # Username Input
     username = st.text_input("Enter your Username to vote:", placeholder="e.g., Roopam")
     
-    st.divider() # Visual separator
-    
     if not username:
-        st.info("👋 Welcome! Please enter your username above to start predicting.")
+        st.info("👋 Please enter your username above to view today's matches and place your predictions!")
     else:
-        st.subheader("🏟️ Today's Matches")
+        fixtures = load_fixtures()
         
-        # --- Match 1 ---
-        st.markdown("### 🇸🇦 Saudi Arabia vs Uruguay 🇺🇾")
-        m1_choice = st.radio(
-            "Prediction for Match 1:",
-            ["Saudi Arabia", "Uruguay", "Draw"],
-            key="match_1",
-            label_visibility="collapsed" # Hides the label for a cleaner look
-        )
-        if st.button("Vote ⚽", key="btn_m1", type="primary", use_container_width=True):
-            with st.spinner("Recording vote..."):
-                time.sleep(0.5) # Simulate network request
-            st.toast(f"Vote for {m1_choice} recorded!", icon="✅")
-            st.balloons() # Engaging celebration animation
+        # Dynamically fetch current date to filter matches
+        today = pd.Timestamp.today().normalize()
+        today_games = fixtures[fixtures["date_dt"].dt.normalize() == today]
+        
+        if len(today_games) == 0:
+            st.write("---")
+            st.info("📅 No matches scheduled for today. Check back tomorrow for more action!")
+        else:
+            votes = load_votes()
             
-        st.divider()
-        
-        # --- Match 2 ---
-        # Duplicating the match structure based on your wireframe
-        st.markdown("### 🇸🇦 Saudi Arabia vs Uruguay 🇺🇾") 
-        m2_choice = st.radio(
-            "Prediction for Match 2:",
-            ["Saudi Arabia", "Uruguay", "Draw"],
-            key="match_2",
-            label_visibility="collapsed"
-        )
-        if st.button("Vote ⚽", key="btn_m2", type="primary", use_container_width=True):
-            with st.spinner("Recording vote..."):
-                time.sleep(0.5)
-            st.toast(f"Vote for {m2_choice} recorded!", icon="✅")
+            for _, game in today_games.iterrows():
+                match_id = str(game["match_number"])
+                team1 = game["team 1"]
+                team2 = game["team 2"]
+                
+                st.write("---")
+                st.subheader(f"🏟️ Match {match_id}: {team1} vs {team2}")
+                
+                # Check if this user has already voted for this specific match
+                user_match_vote = votes[
+                    (votes["username"].str.lower() == username.strip().lower()) & 
+                    (votes["match_number"].astype(str) == match_id)
+                ]
+                
+                if len(user_match_vote) == 0:
+                    # Render voting poll options
+                    choice = st.radio(
+                        "Who will win?",
+                        options=[team1, team2, "Draw"],
+                        key=f"poll_{match_id}",
+                        label_visibility="collapsed"  # Clean aesthetic mimicking the layout wireframe
+                    )
+                    
+                    if st.button("Submit Prediction", key=f"btn_{match_id}", type="primary"):
+                        save_vote(match_id, username, choice)
+                        st.success("⚽ Prediction locked in successfully!")
+                        st.balloons()
+                        st.rerun()
+                else:
+                    voted_choice = user_match_vote.iloc[0]["prediction"]
+                    st.info(f"✅ Your locked prediction: **{voted_choice}**")
+                
+                # Show live visual breakdown of how the group is voting on this match
+                match_predictions = votes[votes["match_number"].astype(str) == match_id]
+                if not match_predictions.empty:
+                    with st.expander("📊 View Group Voting Trends", expanded=False):
+                        chart_data = match_predictions["prediction"].value_counts()
+                        st.bar_chart(chart_data)
 
-
-# ==========================================
-# RIGHT COLUMN: Leaderboard
-# ==========================================
+# --- RIGHT COLUMN: DYNAMIC LEADERBOARD ---
 with right_col:
     st.header("🏅 Leaderboard")
     st.write("Top 5 Predictors")
     
-    # Mock data for the Leaderboard
-    # In a real app, you would calculate this from your votes.csv file
-    leaderboard_data = pd.DataFrame({
-        "Rank": ["🥇 1st", "🥈 2nd", "🥉 3rd", "4th", "5th"],
-        "User": ["Roopam", "Alex_99", "Sarah_Goals", "MessiFan10", "JohnDoe"],
-        "Points": [120, 105, 90, 85, 70]
-    })
+    all_votes = load_votes()
     
-    # Display as a clean, interactive dataframe
-    st.dataframe(
-        leaderboard_data,
-        hide_index=True,
-        use_container_width=True,
-        column_config={
-            "Points": st.column_config.NumberColumn(
-                "Points",
-                help="Total points earned from correct predictions",
-                format="%d ⭐"
-            )
-        }
-    )
-    
-    # Add a fun fact or status box below the leaderboard
-    st.info("💡 **Pro Tip:** You earn 10 points for correctly predicting the winner, and 15 points for calling a Draw!")
+    if all_votes.empty:
+        st.info("The tournament leaderboard is empty. Submit a prediction to appear here!")
+    else:
+        # Dynamically calculate totals grouped by username
+        leaderboard_df = (
+            all_votes.groupby("username")["score"]
+            .sum()
+            .reset_index()
+            .sort_values(by="score", ascending=False)
+            .head(5)
+        )
+        
+        # Format index nicely for the top 5 ranking display
+        leaderboard_df.index = range(1, len(leaderboard_df) + 1)
+        
+        # Display as a polished, styled ranking table
+        st.dataframe(
+            leaderboard_df,
+            column_config={
+                "username": st.column_config.TextColumn("User Name"),
+                "score": st.column_config.NumberColumn("Total Score", format="%d PTS 🏆")
+            },
+            use_container_width=True
+        )
