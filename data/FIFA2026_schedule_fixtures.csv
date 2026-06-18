@@ -1,0 +1,105 @@
+team_1,team_2,stage,match_date,kickoff_time,venue
+Mexico,South Africa,Group A,2026-06-11,13:00:00,Mexico City
+Korea Republic,Czechia,Group A,2026-06-11,20:00:00,Guadalajara
+Canada,Bosnia and Herzegovina,Group B,2026-06-12,15:00:00,Toronto
+USA,Paraguay,Group D,2026-06-12,18:00:00,Los Angeles
+Haiti,Scotland,Group C,2026-06-13,21:00:00,Boston
+Australia,Türkiye,Group D,2026-06-13,21:00:00,Vancouver
+Brazil,Morocco,Group C,2026-06-13,18:00:00,New York/New Jersey
+Qatar,Switzerland,Group B,2026-06-13,12:00:00,San Francisco
+Côte d'Ivoire,Ecuador,Group E,2026-06-14,19:00:00,Philadelphia
+Germany,Curaçao,Group E,2026-06-14,12:00:00,Houston
+Netherlands,Japan,Group F,2026-06-14,15:00:00,Dallas
+Sweden,Tunisia,Group F,2026-06-14,20:00:00,Monterrey
+Saudi Arabia,Uruguay,Group H,2026-06-15,18:00:00,Miami
+Spain,Cabo Verde,Group H,2026-06-15,12:00:00,Atlanta
+IR Iran,New Zealand,Group G,2026-06-15,18:00:00,Los Angeles
+Belgium,Egypt,Group G,2026-06-15,12:00:00,Seattle
+France,Senegal,Group I,2026-06-16,15:00:00,New York/New Jersey
+Iraq,Norway,Group I,2026-06-16,18:00:00,Boston
+Argentina,Algeria,Group J,2026-06-16,20:00:00,Kansas City
+Austria,Jordan,Group J,2026-06-16,21:00:00,San Francisco
+Ghana,Panama,Group L,2026-06-17,19:00:00,Toronto
+England,Croatia,Group L,2026-06-17,15:00:00,Dallas
+Portugal,Congo DR,Group K,2026-06-17,12:00:00,Houston
+Uzbekistan,Colombia,Group K,2026-06-17,20:00:00,Mexico City
+Czechia,South Africa,Group A,2026-06-18,12:00:00,Atlanta
+Switzerland,Bosnia and Herzegovina,Group B,2026-06-18,15:00:00,Los Angeles
+Canada,Qatar,Group B,2026-06-18,18:00:00,Vancouver
+Mexico,Korea Republic,Group A,2026-06-18,21:00:00,Guadalajara
+Brazil,Haiti,Group C,2026-06-19,20:30:00,Philadelphia
+Scotland,Morocco,Group C,2026-06-19,18:00:00,Boston
+Türkiye,Paraguay,Group D,2026-06-19,20:00:00,San Francisco
+USA,Australia,Group D,2026-06-19,12:00:00,Seattle
+Germany,Côte d'Ivoire,Group E,2026-06-20,16:00:00,Toronto
+Ecuador,Curaçao,Group E,2026-06-20,19:00:00,Kansas City
+Netherlands,Sweden,Group F,2026-06-20,12:00:00,Houston
+Tunisia,Japan,Group F,2026-06-20,22:00:00,Monterrey
+Uruguay,Cabo Verde,Group H,2026-06-21,18:00:00,Miami
+Spain,Saudi Arabia,Group H,2026-06-21,12:00:00,Atlanta
+Belgium,IR Iran,Group G,2026-06-21,12:00:00,Los Angeles
+New Zealand,Egypt,Group G,2026-06-21,18:00:00,Vancouver
+Norway,Senegal,Group I,2026-06-22,20:00:00,New York/New Jersey
+France,Iraq,Group I,2026-06-22,17:00:00,Philadelphia
+Argentina,Austria,Group J,2026-06-22,12:00:00,Dallas
+Jordan,Algeria,Group J,2026-06-22,20:00:00,San Francisco
+England,Ghana,Group L,2026-06-23,16:00:00,Boston
+Panama,Croatia,Group L,2026-06-23,19:00:00,Toronto
+Portugal,Uzbekistan,Group K,2026-06-23,12:00:00,Houston
+Colombia,Congo DR,Group K,2026-06-23,20:00:00,Guadalajara
+Scotland,Brazil,Group C,2026-06-24,18:00:00,Miami
+Morocco,Haiti,Group C,2026-06-24,18:00:00,Atlanta
+Switzerland,Canada,Group B,2026-06-24,12:00:00,Vancouver
+Bosnia and Herzegovina,Qatar,Group B,2026-06-24,12:00:00,Seattle
+Czechia,Mexico,Group A,2026-06-24,19:00:00,Mexico City
+South Africa,Korea Republic,Group A,2026-06-24,19:00:00,Monterrey
+Curaçao,Côte d'Ivoire,Group E,2026-06-25,16:00:00,Philadelphia
+Ecuador,Germany,Group E,2026-06-25,16:00:00,New York/New Jersey
+Japan,Sweden,Group F,2026-06-25,18:00:00,Dallas
+Tunisia,Netherlands,Group F,2026-06-25,20:00:00,Kansas City
+Türkiye,USA,Group D,2026-06-25,18:00:00,Los Angeles
+Paraguay,Australia,Group D,2026-06-25,19:00:00,San Francisco
+Norway,France,Group I,2026-06-26,15:00:00,Boston
+Senegal,Iraq,Group I,2026-06-26,15:00:00,Toronto
+Egypt,IR Iran,Group G,2026-06-26,12:00:00,Seattle
+New Zealand,Belgium,Group G,2026-06-26,18:00:00,Vancouver
+Cabo Verde,Saudi Arabia,Group H,2026-06-26,15:00:00,Houston
+Uruguay,Spain,Group H,2026-06-26,20:00:00,Guadalajara
+Panama,England,Group L,2026-06-27,18:00:00,New York/New Jersey
+Croatia,Ghana,Group L,2026-06-27,18:00:00,Philadelphia
+Algeria,Austria,Group J,2026-06-27,18:00:00,Kansas City
+Jordan,Argentina,Group J,2026-06-27,18:00:00,Dallas
+Colombia,Portugal,Group K,2026-06-27,18:00:00,Miami
+Congo DR,Uzbekistan,Group K,2026-06-27,18:00:00,Atlanta
+Group A runners-up,Group B runners-up,Round of 32,2026-06-28,18:00:00,Los Angeles
+Group E winners,Group A/B/C/D/F third place,Round of 32,2026-06-29,18:00:00,Boston
+Group F winners,Group C runners-up,Round of 32,2026-06-29,18:00:00,Monterrey
+Group C winners,Group F runners-up,Round of 32,2026-06-29,18:00:00,Houston
+Group I winners,Group C/D/F/G/H third place,Round of 32,2026-06-30,18:00:00,New York/New Jersey
+Group E runners up,Group I runners-up,Round of 32,2026-06-30,18:00:00,Dallas
+Group A winners,Group C/E/F/H/I third place,Round of 32,2026-06-30,18:00:00,Mexico City
+Group L winners,Group E/H/I/J/K third place,Round of 32,2026-07-01,18:00:00,Atlanta
+Group D winners,Group B/E/F/I/J third place,Round of 32,2026-07-01,18:00:00,San Francisco
+Group G winners,Group A/E/H/I/J third place,Round of 32,2026-07-01,18:00:00,Seattle
+Group K runners-up,Group L runners-up,Round of 32,2026-07-02,18:00:00,Toronto
+Group H winners,Group J runners-up,Round of 32,2026-07-02,18:00:00,Los Angeles
+Group B winners,Group E/F/G/I/J third place,Round of 32,2026-07-02,18:00:00,Vancouver
+Group J winners,Group H runners-up,Round of 32,2026-07-03,18:00:00,Miami
+Group K winners,Group D/E/I/J/L third place,Round of 32,2026-07-03,18:00:00,Kansas City
+Group D runners-up,Group G runners-up,Round of 32,2026-07-03,18:00:00,Dallas
+Winner match 74,Winner match 77,Round of 16,2026-07-04,16:00:00,Philadelphia
+Winner match 73,Winner match 75,Round of 16,2026-07-04,20:00:00,Houston
+Winner match 76,Winner match 78,Round of 16,2026-07-05,16:00:00,New York/New Jersey
+Winner match 79,Winner match 80,Round of 16,2026-07-05,20:00:00,Mexico City
+Winner match 83,Winner match 84,Round of 16,2026-07-06,16:00:00,Dallas
+Winner match 81,Winner match 82,Round of 16,2026-07-06,20:00:00,Seattle
+Winner match 86,Winner match 88,Round of 16,2026-07-07,16:00:00,Atlanta
+Winner match 85,Winner match 87,Round of 16,2026-07-07,20:00:00,Vancouver
+Winner match 89,Winner match 90,Quarterfinals,2026-07-09,18:00:00,Boston
+Winner match 93,Winner match 94,Quarterfinals,2026-07-10,18:00:00,Los Angeles
+Winner match 91,Winner match 92,Quarterfinals,2026-07-11,18:00:00,Miami
+Winner match 95,Winner match 96,Quarterfinals,2026-07-11,18:00:00,Kansas City
+Winner match 97,Winner match 98,Semifinals,2026-07-14,19:00:00,Dallas
+Winner match 99,Winner match 100,Semifinals,2026-07-15,19:00:00,Atlanta
+Runner-up match 101,Runner-up match 102,Third Place,2026-07-18,18:00:00,Miami
+Winner match 101,Winner match 102,Final,2026-07-19,15:00:00,New York/New Jersey
