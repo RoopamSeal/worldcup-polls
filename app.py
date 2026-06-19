@@ -69,6 +69,22 @@ st.markdown("""
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a472a 0%, #2d5a3d 100%);
     }
+
+    [data-testid="stSidebarNav"] span {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Make the links turn gold when you hover over them */
+    [data-testid="stSidebarNav"] a:hover span {
+        color: #ffb81c !important; 
+    }
+
+    /* Keep the SVG icons white as well */
+    [data-testid="stSidebarNav"] svg {
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
+    }
     
     [data-testid="stSidebar"] h1, 
     [data-testid="stSidebar"] h2,
