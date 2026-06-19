@@ -91,7 +91,7 @@ st.markdown("""
     .banner-header {
         /* Add your copied image URL below inside the url('') */
         background: linear-gradient(rgba(26, 71, 42, 0.85), rgba(26, 71, 42, 0.95)), 
-                    url('INSERT_YOUR_IMAGE_URL_HERE') center/cover no-repeat;
+                    url('https://platform.starsandstripesfc.com/wp-content/uploads/sites/151/2026/05/gettyimages-2274470836.jpg?quality=90&strip=all&crop=0%2C0.024402147388969%2C100%2C99.951195705222&w=1080') center/cover no-repeat;
         padding: 4rem 2rem;
         border-radius: 1rem;
         text-align: center;
