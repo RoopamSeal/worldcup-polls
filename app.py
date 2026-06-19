@@ -1,13 +1,17 @@
 """
-FIFA World Cup 2026 Prediction Platform - Main Application
+FIFA World Cup 2026 Prediction Platform - Main Application & Home Dashboard
 """
 import os
 import logging
 import streamlit as st
+import pandas as pd
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
 from src.config import Config
 from src.storage import Storage
 from src.scheduler import start_background_tasks
+from src.fixtures import FixtureLoader
 
 # Configure logging
 logging.basicConfig(
@@ -24,10 +28,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize config and storage
+# Initialize config, storage, and fixtures
 config = Config()
 storage = Storage(config)
 storage.initialize_data_layer()
+
+fixture_loader = FixtureLoader(config)
+fixture_loader.ensure_fixtures_loaded(storage)
 
 # Start background scheduler (runs once per session)
 if 'scheduler_started' not in st.session_state:
@@ -40,7 +47,7 @@ if 'user_id' not in st.session_state:
 if 'user_name' not in st.session_state:
     st.session_state.user_name = None
 
-# FIFA World Cup 2026 Custom CSS - Enhanced Design & Banner Fixes
+# FIFA World Cup 2026 Custom CSS
 st.markdown("""
 <style>
     /* Main color scheme - FIFA 2026 inspired */
@@ -89,8 +96,7 @@ st.markdown("""
        HERO BANNER CSS
        ---------------------------------------------------- */
     .banner-header {
-        /* Add your copied image URL below inside the url('') */
-        background: linear-gradient(rgba(26, 71, 42, 0.5), rgba(26, 71, 42, 0.6)),
+        background: linear-gradient(rgba(26, 71, 42, 0.5), rgba(26, 71, 42, 0.6)), 
                     url('https://s.yimg.com/ny/api/res/1.2/2DOPtSxLvgCKhWuhEIUNTQ--/YXBwaWQ9aGlnaGxhbmRlcjt3PTk2MDtoPTU0MDtjZj13ZWJw/https://media.zenfs.com/en/wdaf_articles_412/6e591ad86accfc2fa04d6bff48ecf693') center/cover no-repeat;
         padding: 4rem 2rem;
         border-radius: 1rem;
@@ -182,6 +188,39 @@ st.markdown("""
         font-weight: 800 !important;
         font-size: 2rem !important;
     }
+
+    /* Match and Dashboard Cards */
+    .match-card {
+        background: linear-gradient(to right, #ffffff 0%, #fafafa 100%);
+        padding: 1.5rem;
+        border-radius: 0.8rem;
+        margin-bottom: 1rem;
+        border: 2px solid #e0e0e0;
+        border-left: 4px solid #ffb81c;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .match-card:hover {
+        border-color: #ffb81c;
+        box-shadow: 0 6px 20px rgba(255, 184, 28, 0.15);
+        transform: translateX(4px);
+    }
+    
+    .prediction-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+        padding: 1.2rem;
+        border-radius: 0.8rem;
+        margin-bottom: 1rem;
+        border-left: 5px solid #e53238;
+        border-right: 2px solid #ffb81c;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .prediction-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
     
     /* Alert styling */
     .stAlert {
@@ -194,21 +233,10 @@ st.markdown("""
         border: 1px solid rgba(255, 184, 28, 0.3);
         margin: 2rem 0;
     }
-    
-    /* Custom team colors */
-    .team-badge {
-        background: linear-gradient(135deg, #e53238 0%, #ffb81c 100%);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        display: inline-block;
-        margin: 0.25rem;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar - Authentication with Enhanced Design
+# Sidebar - Authentication & User Stats
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; margin: 1rem 0;">
@@ -221,6 +249,7 @@ with st.sidebar:
     
     st.markdown("---")
 
+# LOGIN LOGIC IN SIDEBAR
 if st.session_state.user_id is None:
     st.sidebar.subheader("🎬 Enter Tournament")
     username = st.sidebar.text_input(
@@ -240,6 +269,7 @@ if st.session_state.user_id is None:
         else:
             st.sidebar.error("Please enter a username")
 else:
+    # LOGGED IN SIDEBAR VIEW
     st.sidebar.markdown(f"""
     <div style="background: linear-gradient(135deg, #ffb81c 0%, #e53238 100%); 
                 padding: 1rem; border-radius: 0.8rem; text-align: center; 
@@ -253,7 +283,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
     
-    # User stats in sidebar
     user_predictions = storage.get_user_prediction_count(st.session_state.user_id)
     user_correct = storage.get_user_correct_predictions(st.session_state.user_id)
     user_points = storage.get_user_total_points(st.session_state.user_id)
@@ -262,12 +291,12 @@ else:
     
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        st.metric("🎯 Predictions", user_predictions)
+        st.metric("🎯 Preds", user_predictions)
         st.metric("⭐ Points", user_points)
     with col2:
         accuracy = (user_correct / user_predictions * 100) if user_predictions > 0 else 0
         st.metric("✅ Correct", user_correct)
-        st.metric("📈 Accuracy", f"{accuracy:.1f}%")
+        st.metric("📈 Acc %", f"{accuracy:.1f}%")
     
     st.sidebar.markdown("---")
     
@@ -283,10 +312,14 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Main page routing
+# ==========================================
+# MAIN PAGE ROUTING
+# ==========================================
+
 if st.session_state.user_id is None:
-    
-    # NEW FULL-WIDTH HERO BANNER
+    # ---------------------------------------------------------
+    # STATE 1: NOT LOGGED IN (LANDING PAGE)
+    # ---------------------------------------------------------
     st.markdown("""
     <div class="banner-header">
         <h1>⚽ WORLD CUP 2026</h1>
@@ -355,6 +388,299 @@ if st.session_state.user_id is None:
             </ul>
         </div>
         """, unsafe_allow_html=True)
+
 else:
-    # Pages are automatically loaded from the pages/ directory
-    pass
+    # ---------------------------------------------------------
+    # STATE 2: LOGGED IN (DASHBOARD)
+    # ---------------------------------------------------------
+    st.markdown("""
+    <h1 style="text-align: center; font-size: 2.5rem; margin-bottom: 0;">
+        ⚽ WORLD CUP 2026 DASHBOARD
+    </h1>
+    <p style="text-align: center; color: #e53238; font-size: 1.1rem; margin-bottom: 2rem;">
+        🇺🇸 USA | 🇨🇦 CANADA | 🇲🇽 MEXICO
+    </p>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Tournament Info Section
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%); 
+                padding: 2rem; border-radius: 0.8rem; margin-bottom: 2rem;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.15);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; color: white; text-align: center;">
+            <div>
+                <p style="font-size: 0.9rem; color: #ffb81c; margin: 0;">TOURNAMENT</p>
+                <h3 style="color: #ffffff; border: none; margin: 0.5rem 0; font-size: 1.4rem;">FIFA 2026</h3>
+            </div>
+            <div>
+                <p style="font-size: 0.9rem; color: #ffb81c; margin: 0;">HOST NATIONS</p>
+                <h3 style="color: #ffffff; border: none; margin: 0.5rem 0; font-size: 1.4rem;">3 Countries</h3>
+            </div>
+            <div>
+                <p style="font-size: 0.9rem; color: #ffb81c; margin: 0;">TEAMS</p>
+                <h3 style="color: #ffffff; border: none; margin: 0.5rem 0; font-size: 1.4rem;">48 Teams</h3>
+            </div>
+            <div>
+                <p style="font-size: 0.9rem; color: #ffb81c; margin: 0;">MATCHES</p>
+                <h3 style="color: #ffffff; border: none; margin: 0.5rem 0; font-size: 1.4rem;">104 Games</h3>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Tournament Stats
+    st.markdown("<h2 style='color: #1a472a; border-bottom: 3px solid #ffb81c;'>📊 Tournament Statistics</h2>", unsafe_allow_html=True)
+
+    try:
+        tournament_stats = storage.get_tournament_stats()
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            users = tournament_stats.get('Total Users', '0')
+            st.metric("👥 Users", users)
+            
+        with col2:
+            matches = tournament_stats.get('Total Matches', '0')
+            st.metric("🎯 Matches", matches)
+            
+        with col3:
+            scheduled = tournament_stats.get('Scheduled Matches', '0')
+            st.metric("🔜 Upcoming", scheduled)
+            
+        with col4:
+            completed = tournament_stats.get('Completed Matches', '0')
+            st.metric("✅ Completed", completed)
+            
+        with col5:
+            predictions = tournament_stats.get('Total Predictions', '0')
+            st.metric("⭐ Predictions", predictions)
+            
+        st.markdown("---")
+    except Exception as e:
+        st.warning(f"Could not load tournament stats: {e}")
+
+    # Today's/Upcoming Matches
+    st.markdown("<h2 style='color: #1a472a; border-bottom: 3px solid #ffb81c;'>🔜 Upcoming Matches</h2>", unsafe_allow_html=True)
+
+    try:
+        matches = storage.get_all_matches()
+        matches_df = pd.DataFrame(matches)
+        
+        if matches_df.empty:
+            st.info("No matches scheduled yet")
+        else:
+            # Filter active matches (scheduled or live)
+            active_matches = matches_df[matches_df['status'].isin(['scheduled', 'live'])]
+            
+            if active_matches.empty:
+                st.info("No upcoming matches")
+            else:
+                # Sort by date and time
+                active_matches = active_matches.copy()
+                active_matches['match_datetime'] = pd.to_datetime(
+                    active_matches['match_date'] + ' ' + active_matches['kickoff_time']
+                )
+                active_matches = active_matches.sort_values('match_datetime')
+                
+                for idx, (_, match) in enumerate(active_matches.head(10).iterrows()):
+                    match_datetime = pd.to_datetime(
+                        f"{match['match_date']} {match['kickoff_time']}"
+                    )
+                    
+                    st.markdown(f"""
+                    <div class="match-card">
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 2fr 1.5fr; gap: 1rem; align-items: center;">
+                            <div style="text-align: right;">
+                                <h4 style="color: #1a472a; margin: 0; font-size: 1.1rem; font-weight: 700;">
+                                    {match['team_1']}
+                                </h4>
+                            </div>
+                            <div style="text-align: center;">
+                                <span style="background: #ffb81c; color: #1a472a; padding: 0.5rem 0.8rem; 
+                                           border-radius: 0.4rem; font-weight: 600; font-size: 0.85rem;">
+                                    vs
+                                </span>
+                            </div>
+                            <div style="text-align: left;">
+                                <h4 style="color: #1a472a; margin: 0; font-size: 1.1rem; font-weight: 700;">
+                                    {match['team_2']}
+                                </h4>
+                            </div>
+                            <div style="text-align: center;">
+                                <p style="color: #666; margin: 0; font-size: 0.9rem;">
+                                    📅 {match_datetime.strftime('%b %d')}<br>
+                                    🕐 {match_datetime.strftime('%H:%M')}<br>
+                                    📍 {match['venue']}
+                                </p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid #e0e0e0;">
+                            <span style="background: #e53238; color: white; padding: 0.3rem 0.6rem; 
+                                       border-radius: 0.3rem; font-size: 0.8rem; font-weight: 600;">
+                                {match['stage']}
+                            </span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"Error loading matches: {e}")
+
+    st.markdown("---")
+
+    # Leaderboard Preview
+    st.markdown("<h2 style='color: #1a472a; border-bottom: 3px solid #ffb81c;'>🏆 Top 10 Leaderboard</h2>", unsafe_allow_html=True)
+
+    try:
+        leaderboard = storage.get_leaderboard(limit=10)
+        
+        if leaderboard:
+            lb_df = pd.DataFrame(leaderboard)
+            
+            # Format display
+            display_df = lb_df[[
+                'rank', 'user_name', 'total_points', 'accuracy_percentage'
+            ]].copy()
+            
+            display_df.columns = [
+                '🏅', 'Player', '⭐ Points', '📊 Accuracy %'
+            ]
+            
+            # Add emoji medals
+            display_df['🏅'] = display_df['🏅'].apply(lambda x: 
+                '🥇' if x == 1 else '🥈' if x == 2 else '🥉' if x == 3 else f'#{x}'
+            )
+            
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("Leaderboard will appear once users make predictions")
+    except Exception as e:
+        st.error(f"Error loading leaderboard: {e}")
+
+    st.markdown("---")
+
+    # User's Stats
+    if st.session_state.user_id:
+        st.markdown("<h2 style='color: #1a472a; border-bottom: 3px solid #ffb81c;'>👤 Your Statistics</h2>", unsafe_allow_html=True)
+        
+        try:
+            col1, col2, col3, col4 = st.columns(4)
+            
+            predictions = storage.get_user_prediction_count(st.session_state.user_id)
+            correct = storage.get_user_correct_predictions(st.session_state.user_id)
+            accuracy = (correct / predictions * 100) if predictions > 0 else 0
+            points = storage.get_user_total_points(st.session_state.user_id)
+            
+            with col1:
+                st.metric("🎯 Predictions", predictions)
+            with col2:
+                st.metric("✅ Correct", correct)
+            with col3:
+                st.metric("📊 Accuracy", f"{accuracy:.1f}%")
+            with col4:
+                st.metric("⭐ Total Points", points)
+            
+            # User rank
+            user_rank = storage.get_user_rank(st.session_state.user_id)
+            if user_rank:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #ffb81c 0%, #ffa500 100%); 
+                            padding: 1.5rem; border-radius: 0.8rem; text-align: center;
+                            color: #1a472a; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 1rem;">
+                    <h3 style="color: #1a472a; border: none; margin: 0; font-size: 1.8rem;">
+                        🎯 Rank #{user_rank['rank']}
+                    </h3>
+                    <p style="margin: 0.5rem 0 0 0; font-weight: 600;">You're in the top {(user_rank['rank'] / len(storage.get_leaderboard())) * 100:.1f}%</p>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        except Exception as e:
+            st.error(f"Error loading user stats: {e}")
+
+    st.markdown("---")
+
+    # Information Section
+    st.markdown("<h2 style='color: #1a472a; border-bottom: 3px solid #ffb81c;'>ℹ️ How to Play</h2>", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("""
+        <div class="prediction-card">
+            <h3 style="color: #e53238; border: none; margin-top: 0;">🎯 Make Predictions</h3>
+            <ul style="color: #666; margin: 0;">
+                <li>Go to the <b>Predict</b> page</li>
+                <li>Choose upcoming matches</li>
+                <li>Select your predicted winner</li>
+                <li>Lock in before kickoff</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class="prediction-card">
+            <h3 style="color: #e53238; border: none; margin-top: 0;">📊 Track Performance</h3>
+            <ul style="color: #666; margin: 0;">
+                <li>Visit <b>My Predictions</b></li>
+                <li>View your prediction history</li>
+                <li>Check accuracy metrics</li>
+                <li>Earn points for correct picks</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div class="prediction-card">
+            <h3 style="color: #e53238; border: none; margin-top: 0;">🏆 Climb Rankings</h3>
+            <ul style="color: #666; margin: 0;">
+                <li>Check the <b>Leaderboard</b></li>
+                <li>Compete globally</li>
+                <li>Earn achievement badges</li>
+                <li>Have fun! ⚽</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Scoring Info
+    st.markdown("<h2 style='color: #1a472a; border-bottom: 3px solid #ffb81c;'>⭐ Scoring System</h2>", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); 
+                    padding: 1.5rem; border-radius: 0.8rem; text-align: center;
+                    color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <h3 style="color: #ffffff; border: none; margin: 0;">✅ CORRECT</h3>
+            <p style="margin: 0.5rem 0 0 0; font-size: 1.5rem; font-weight: 700;">+3 POINTS</p>
+            <small>Predict the winner correctly</small>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #ffb81c 0%, #ffa500 100%); 
+                    padding: 1.5rem; border-radius: 0.8rem; text-align: center;
+                    color: #1a472a; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <h3 style="color: #1a472a; border: none; margin: 0;">🤝 DRAW</h3>
+            <p style="margin: 0.5rem 0 0 0; font-size: 1.5rem; font-weight: 700;">+2 POINTS</p>
+            <small>Predict a draw correctly</small>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #e53238 0%, #c41e3a 100%); 
+                    padding: 1.5rem; border-radius: 0.8rem; text-align: center;
+                    color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <h3 style="color: #ffffff; border: none; margin: 0;">❌ INCORRECT</h3>
+            <p style="margin: 0.5rem 0 0 0; font-size: 1.5rem; font-weight: 700;">0 POINTS</p>
+            <small>Wrong prediction</small>
+        </div>
+        """, unsafe_allow_html=True)
