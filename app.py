@@ -40,7 +40,7 @@ if 'user_id' not in st.session_state:
 if 'user_name' not in st.session_state:
     st.session_state.user_name = None
 
-# FIFA World Cup 2026 Custom CSS - Enhanced Design
+# FIFA World Cup 2026 Custom CSS - Enhanced Design & Bug Fixes
 st.markdown("""
 <style>
     /* Main color scheme - FIFA 2026 inspired */
@@ -63,14 +63,10 @@ st.markdown("""
         background: linear-gradient(180deg, #1a472a 0%, #2d5a3d 100%);
     }
     
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #ffffff;
-    }
-    
     [data-testid="stSidebar"] h1, 
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
-        color: #ffb81c;
+        color: #ffb81c !important;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
     
@@ -87,54 +83,6 @@ st.markdown("""
         color: #1a472a;
         border-left: 4px solid #e53238;
         padding-left: 0.8rem;
-    }
-    
-    /* Card styles */
-    .metric-card {
-        background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
-        color: #ffffff;
-        padding: 1.5rem;
-        border-radius: 0.8rem;
-        border: 2px solid #ffb81c;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
-    
-    .prediction-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
-        padding: 1.2rem;
-        border-radius: 0.8rem;
-        margin-bottom: 1rem;
-        border-left: 5px solid #e53238;
-        border-right: 2px solid #ffb81c;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .prediction-card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-    }
-    
-    .match-card {
-        background: linear-gradient(to right, #ffffff 0%, #fafafa 100%);
-        padding: 1.5rem;
-        border-radius: 0.8rem;
-        margin-bottom: 1rem;
-        border: 2px solid #e0e0e0;
-        border-left: 4px solid #ffb81c;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .match-card:hover {
-        border-color: #ffb81c;
-        box-shadow: 0 6px 20px rgba(255, 184, 28, 0.15);
-        transform: translateX(4px);
     }
     
     /* Leaderboard header */
@@ -158,11 +106,11 @@ st.markdown("""
     /* Button styling */
     .stButton > button {
         background: linear-gradient(135deg, #ffb81c 0%, #ffa500 100%);
-        color: #1a472a;
+        color: #1a472a !important;
         border: none;
         border-radius: 0.6rem;
         padding: 0.7rem 1.5rem;
-        font-weight: 600;
+        font-weight: 700;
         transition: all 0.3s ease;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
@@ -170,51 +118,33 @@ st.markdown("""
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        color: #1a472a !important;
     }
-    
-    /* Metrics styling */
-    .stMetric {
-        background: #ffffff;
+
+    /* ----------------------------------------------------
+       FIX FOR INVISIBLE METRIC TEXT (WHITE ON WHITE)
+       ---------------------------------------------------- */
+    [data-testid="stMetric"] {
+        background-color: #ffffff;
         padding: 1.2rem;
         border-radius: 0.8rem;
-        border: 1px solid #ffb81c;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 2px solid #ffb81c;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        margin-bottom: 0.5rem;
     }
     
-    .stMetric > div:first-child {
-        color: #1a472a;
-        font-weight: 600;
+    [data-testid="stMetricLabel"] * {
+        color: #1a472a !important; /* Forces the label text to be Dark Green */
+        font-weight: 700 !important;
+        font-size: 1rem !important;
     }
     
-    .stMetric > div:last-child {
-        color: #e53238;
-        font-size: 1.8rem;
-        font-weight: 700;
+    [data-testid="stMetricValue"] * {
+        color: #e53238 !important; /* Forces the value text to be Red */
+        font-weight: 800 !important;
+        font-size: 2rem !important;
     }
-    
-    /* Table styling */
-    .stDataFrame {
-        border-radius: 0.8rem;
-        overflow: hidden;
-    }
-    
-    .stDataFrame table {
-        font-size: 0.95rem;
-    }
-    
-    [data-testid="stDataFrame"] thead {
-        background: linear-gradient(90deg, #1a472a 0%, #2d5a3d 100%);
-        color: #ffb81c;
-        font-weight: 600;
-    }
-    
-    [data-testid="stDataFrame"] tbody tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-    
-    [data-testid="stDataFrame"] tbody tr:hover {
-        background-color: #fff3e0;
-    }
+    /* ---------------------------------------------------- */
     
     /* Alert styling */
     .stAlert {
@@ -222,69 +152,10 @@ st.markdown("""
         border-left: 4px solid #ffb81c;
     }
     
-    .stSuccess {
-        background-color: #e8f5e9;
-        border-left-color: #4caf50;
-    }
-    
-    .stWarning {
-        background-color: #fff3e0;
-        border-left-color: #ffb81c;
-    }
-    
-    .stError {
-        background-color: #ffebee;
-        border-left-color: #e53238;
-    }
-    
-    .stInfo {
-        background-color: #e3f2fd;
-        border-left-color: #2196f3;
-    }
-    
-    /* Selectbox and inputs */
-    .stSelectbox,
-    .stTextInput,
-    .stSlider {
-        border-radius: 0.6rem;
-    }
-    
-    .stSelectbox > div > div {
-        border: 2px solid #ffb81c;
-        border-radius: 0.6rem;
-    }
-    
     /* Divider */
     hr {
-        border: 1px solid #ffb81c;
+        border: 1px solid rgba(255, 184, 28, 0.3);
         margin: 2rem 0;
-    }
-    
-    /* Column styling */
-    .stColumn {
-        background-color: transparent;
-    }
-    
-    /* Tab styling */
-    .stTabs [data-baseweb="tab-list"] {
-        border-bottom: 3px solid #ffb81c;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        color: #e53238 !important;
-        border-bottom: 3px solid #e53238 !important;
-    }
-    
-    /* Checkbox styling */
-    .stCheckbox label {
-        color: #1a472a;
-        font-weight: 500;
-    }
-    
-    /* Radio button styling */
-    .stRadio label {
-        color: #1a472a;
-        font-weight: 500;
     }
     
     /* Custom team colors */
@@ -297,21 +168,6 @@ st.markdown("""
         display: inline-block;
         margin: 0.25rem;
     }
-    
-    /* Responsive improvements */
-    @media (max-width: 768px) {
-        .main {
-            padding: 0.5rem 1rem;
-        }
-        
-        h1, h2 {
-            font-size: 1.5rem;
-        }
-        
-        .metric-card {
-            margin-bottom: 1rem;
-        }
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -319,10 +175,10 @@ st.markdown("""
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; margin: 1rem 0;">
-        <h1 style="font-size: 2.5rem; margin: 0;">⚽</h1>
-        <h2 style="color: #ffb81c; font-size: 1.5rem; margin: 0.5rem 0;">WORLD CUP</h2>
-        <h3 style="color: #e53238; font-size: 1.3rem; margin: 0; border: none;">2026</h3>
-        <p style="color: #ffffff; font-size: 0.9rem; margin-top: 0.5rem;">Predictor</p>
+        <h1 style="font-size: 3rem; margin: 0;">⚽</h1>
+        <h2 style="color: #ffb81c; font-size: 1.8rem; margin: 0.5rem 0; border: none;">WORLD CUP</h2>
+        <h3 style="color: #e53238; font-size: 1.5rem; margin: 0; border: none;">2026</h3>
+        <p style="color: #ffffff; font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">PREDICTION PLATFORM</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -350,11 +206,11 @@ else:
     st.sidebar.markdown(f"""
     <div style="background: linear-gradient(135deg, #ffb81c 0%, #e53238 100%); 
                 padding: 1rem; border-radius: 0.8rem; text-align: center; 
-                margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-        <p style="color: #1a472a; font-size: 0.9rem; margin: 0; font-weight: 600;">
-            ✅ LOGGED IN
+                margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+        <p style="color: white; font-size: 0.9rem; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+            ✅ Logged In As
         </p>
-        <p style="color: #1a472a; font-size: 1.2rem; margin: 0.5rem 0; font-weight: 700;">
+        <p style="color: white; font-size: 1.4rem; margin: 0.5rem 0 0 0; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
             {st.session_state.user_name}
         </p>
     </div>
@@ -365,7 +221,7 @@ else:
     user_correct = storage.get_user_correct_predictions(st.session_state.user_id)
     user_points = storage.get_user_total_points(st.session_state.user_id)
     
-    st.sidebar.subheader("📊 Your Stats")
+    st.sidebar.markdown("### 📊 Your Stats")
     
     col1, col2 = st.sidebar.columns(2)
     with col1:
@@ -383,12 +239,11 @@ else:
         st.session_state.user_name = None
         st.rerun()
 
-st.sidebar.markdown("---")
 st.sidebar.markdown("""
-<p style="text-align: center; color: #ffb81c; font-size: 0.75rem; margin-top: 2rem;">
-    ⚽ FIFA World Cup 2026 Prediction Platform<br>
-    <span style="color: #ffffff;">v1.0 | Powered by Data</span>
-</p>
+<div style="text-align: center; color: rgba(255,255,255,0.6); font-size: 0.75rem; margin-top: 2rem;">
+    ⚽ FIFA World Cup 2026<br>
+    v1.0 | Powered by Data
+</div>
 """, unsafe_allow_html=True)
 
 # Main page routing
@@ -397,19 +252,19 @@ if st.session_state.user_id is None:
     
     with col1:
         st.markdown("""
-        <div style="text-align: center; padding: 2rem;">
-            <h1 style="font-size: 3rem; margin: 0;">⚽ WORLD CUP 2026</h1>
-            <h2 style="color: #e53238; margin: 1rem 0;">PREDICTION PLATFORM</h2>
-            <p style="font-size: 1.1rem; color: #666;">
-                Join millions of football fans and predict the future of the FIFA World Cup 2026!
+        <div style="padding: 2rem 0;">
+            <h1 style="font-size: 3.5rem; margin: 0; border: none; padding: 0;">⚽ WORLD CUP 2026</h1>
+            <h2 style="color: #e53238; margin: 0.5rem 0 1.5rem 0; border: none;">PREDICTION PLATFORM</h2>
+            <p style="font-size: 1.2rem; color: #444; max-width: 600px;">
+                Join millions of football fans worldwide. Predict match outcomes, climb the global leaderboard, and prove your football knowledge!
             </p>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
-        <div style="text-align: center; font-size: 4rem;">
-            ⚽🇺🇸🇨🇦🇲🇽
+        <div style="text-align: right; font-size: 5rem; padding: 2rem 0;">
+            🇺🇸🇨🇦🇲🇽
         </div>
         """, unsafe_allow_html=True)
     
@@ -420,56 +275,32 @@ if st.session_state.user_id is None:
     with col1:
         st.markdown("""
         <div style="background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%); 
-                    padding: 1.5rem; border-radius: 0.8rem; text-align: center;
-                    border: 2px solid #ffb81c; color: white;">
-            <h3 style="color: #ffb81c; border: none; margin-top: 0;">🎯 PREDICT</h3>
-            <p>Make predictions on all 64 matches of the tournament</p>
+                    padding: 2rem 1.5rem; border-radius: 1rem; text-align: center;
+                    border: 2px solid #ffb81c; color: white; height: 100%;">
+            <h3 style="color: #ffb81c; border: none; margin-top: 0; font-size: 1.5rem;">🎯 PREDICT</h3>
+            <p style="font-size: 1.1rem; opacity: 0.9;">Make predictions on all 64 matches of the tournament</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
         <div style="background: linear-gradient(135deg, #e53238 0%, #c41e3a 100%); 
-                    padding: 1.5rem; border-radius: 0.8rem; text-align: center;
-                    border: 2px solid #ffb81c; color: white;">
-            <h3 style="color: #ffb81c; border: none; margin-top: 0;">🏆 COMPETE</h3>
-            <p>Compete on global leaderboard with other fans</p>
+                    padding: 2rem 1.5rem; border-radius: 1rem; text-align: center;
+                    border: 2px solid #ffb81c; color: white; height: 100%;">
+            <h3 style="color: #ffb81c; border: none; margin-top: 0; font-size: 1.5rem;">🏆 COMPETE</h3>
+            <p style="font-size: 1.1rem; opacity: 0.9;">Compete on the global leaderboard with other fans</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown("""
         <div style="background: linear-gradient(135deg, #ffb81c 0%, #ffa500 100%); 
-                    padding: 1.5rem; border-radius: 0.8rem; text-align: center;
-                    border: 2px solid #1a472a; color: #1a472a;">
-            <h3 style="color: #1a472a; border: none; margin-top: 0;">⭐ WIN</h3>
-            <p>Earn points and climb the rankings</p>
+                    padding: 2rem 1.5rem; border-radius: 1rem; text-align: center;
+                    border: 2px solid #1a472a; color: #1a472a; height: 100%;">
+            <h3 style="color: #1a472a; border: none; margin-top: 0; font-size: 1.5rem;">⭐ WIN</h3>
+            <p style="font-size: 1.1rem; font-weight: 500;">Earn points and climb the rankings to the top</p>
         </div>
         """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    st.subheader("📋 How It Works")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        #### 1️⃣ Login
-        👤 Create your account with just a username
-        """)
-    
-    with col2:
-        st.markdown("""
-        #### 2️⃣ Predict
-        🎯 Forecast match outcomes before kickoff
-        """)
-    
-    with col3:
-        st.markdown("""
-        #### 3️⃣ Score
-        ⭐ Earn points for correct predictions
-        """)
     
     st.markdown("---")
     
@@ -478,23 +309,27 @@ if st.session_state.user_id is None:
     with col1:
         st.subheader("💰 Scoring Rules")
         st.markdown("""
-        - **Correct Winner**: `+3 points` 🟢
-        - **Correct Draw**: `+2 points` 🟡
-        - **Wrong**: `0 points` 🔴
-        """)
+        <div style="background: white; padding: 1.5rem; border-radius: 0.8rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #1a472a;">
+            <ul style="list-style-type: none; padding-left: 0; margin: 0; font-size: 1.1rem; line-height: 1.8;">
+                <li>🟢 <strong>Correct Winner:</strong> <span style="color:#1a472a; font-weight:bold;">+3 points</span></li>
+                <li>🟡 <strong>Correct Draw:</strong> <span style="color:#ffb81c; font-weight:bold;">+2 points</span></li>
+                <li>🔴 <strong>Wrong Prediction:</strong> <span style="color:#e53238; font-weight:bold;">0 points</span></li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         st.subheader("📅 Tournament Info")
         st.markdown("""
-        - **Event**: FIFA World Cup 2026
-        - **Hosts**: 🇺🇸 USA, 🇨🇦 Canada, 🇲🇽 Mexico
-        - **Teams**: 32 nations
-        - **Matches**: 64 games
-        """)
-    
-    st.markdown("---")
-    
-    st.info("👈 **Click \"Join Now\" in the sidebar to start predicting!**")
+        <div style="background: white; padding: 1.5rem; border-radius: 0.8rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #e53238;">
+            <ul style="list-style-type: none; padding-left: 0; margin: 0; font-size: 1.1rem; line-height: 1.8;">
+                <li>🌍 <strong>Event:</strong> FIFA World Cup 2026</li>
+                <li>🏟️ <strong>Hosts:</strong> 🇺🇸 USA, 🇨🇦 Canada, 🇲🇽 Mexico</li>
+                <li>👥 <strong>Teams:</strong> 48 Nations</li>
+                <li>⚽ <strong>Matches:</strong> 104 Games</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 else:
     # Pages are automatically loaded from the pages/ directory
     pass
