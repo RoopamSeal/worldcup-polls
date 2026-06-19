@@ -17,7 +17,6 @@ fixture_loader = FixtureLoader(config)
 fixture_loader.ensure_fixtures_loaded(storage)
 pred_manager = PredictionManager(config, storage)
 
-st.set_page_config(page_title="Predict - World Cup 2026", layout="wide")
 
 st.markdown("""
 <h1 style="text-align: center;">🎯 MAKE YOUR PREDICTIONS</h1>
