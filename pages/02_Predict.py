@@ -3,7 +3,7 @@ Predict page - Make predictions on matches with FIFA 2026 design
 """
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from src.config import Config
 from src.storage import Storage
 from src.predictions import PredictionManager
@@ -45,8 +45,17 @@ try:
     # Filter for active (scheduled) matches
     active_matches = matches_df[matches_df['status'] == 'scheduled'].copy()
     
+    # --- DATE FILTERING LOGIC (US TIME) ---
+    # Calculate current US date (UTC minus 4 hours for Eastern Daylight Time)
+    current_us_time = datetime.now(timezone.utc) - timedelta(hours=4)
+    current_us_date_str = current_us_time.strftime('%Y-%m-%d')
+    
+    # Only show matches that match the current US date
+    active_matches = active_matches[active_matches['match_date'] == current_us_date_str]
+    # --------------------------------------
+    
     if active_matches.empty:
-        st.info("⏰ No active matches available for prediction at this time")
+        st.info("⏰ No matches scheduled for today (US Date). Check back tomorrow!")
         st.stop()
     
     # Sort by date and time
@@ -60,14 +69,18 @@ try:
                 padding: 1rem; border-radius: 0.8rem; margin-bottom: 2rem;
                 color: #ffb81c; text-align: center;">
         <h3 style="color: #ffb81c; border: none; margin: 0;">
-            📋 {len(active_matches)} MATCHES AVAILABLE FOR PREDICTION
+            📋 {len(active_matches)} MATCHES AVAILABLE TODAY
         </h3>
     </div>
     """, unsafe_allow_html=True)
     
     # Display matches with prediction options
     for idx, (_, match) in enumerate(active_matches.iterrows()):
-        match_datetime = pd.to_datetime(f"{match['match_date']} {match['kickoff_time']}")
+        
+        # --- IST TIMING CONVERSION ---
+        match_datetime_us = pd.to_datetime(f"{match['match_date']} {match['kickoff_time']}")
+        match_datetime_ist = match_datetime_us + pd.Timedelta(hours=9, minutes=30)
+        # -----------------------------
         
         # Check if user already predicted
         user_prediction = storage.get_prediction(match['match_id'], st.session_state.user_id)
@@ -85,7 +98,7 @@ try:
             status_badge = f"⏱️ {reason}"
             status_color = "#e53238"
         else:
-            card_color = "#e2e8f0"
+            card_color = "#e2e8f0"  # Cooler gray-blue
             border_color = "#ffb81c"
             status_badge = "🎯 OPEN"
             status_color = "#ffb81c"
@@ -113,8 +126,8 @@ try:
                 </div>
                 <div style="text-align: center;">
                     <p style="color: #666; margin: 0; font-size: 0.85rem;">
-                        📅 {match_datetime.strftime('%b %d')}<br>
-                        🕐 {match_datetime.strftime('%H:%M')}<br>
+                        📅 {match_datetime_ist.strftime('%b %d')}<br>
+                        🕐 {match_datetime_ist.strftime('%H:%M')} IST<br>
                         📍 {match['venue']}<br>
                         <span style="background: #e53238; color: white; padding: 0.2rem 0.5rem; 
                                    border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600;">
