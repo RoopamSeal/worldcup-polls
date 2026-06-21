@@ -142,12 +142,14 @@ class Storage:
             'total_points': total_points
         }
 
+
     def get_prediction(self, match_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get a specific prediction for a user and match."""
         return self.db.fetch_one(
             "SELECT * FROM predictions WHERE match_id = %s AND user_id = %s",
             (match_id, user_id)
         )
+
 
     def get_user_predictions(self, user_id: str) -> List[Dict[str, Any]]:
         """Get all predictions for a specific user."""
