@@ -5,10 +5,10 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 from src.config import Config
-from src.storage import Storage
+from src.storage import get_storage
 
 config = Config()
-storage = Storage(config)
+storage = get_storage()
 
 # ==========================================
 # NOT LOGGED IN — Landing Page

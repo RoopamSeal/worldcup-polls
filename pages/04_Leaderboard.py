@@ -5,18 +5,15 @@ import streamlit as st
 import pandas as pd
 import datetime
 from src.config import Config
-from src.storage import Storage
+from src.storage import get_storage
 
-# 1. Session state safety initialization
 if 'user_id' not in st.session_state:
     st.session_state.user_id = None
 if 'user_name' not in st.session_state:
     st.session_state.user_name = None
 
-# Initialize
 config = Config()
-storage = Storage(config)
-storage.initialize_data_layer()
+storage = get_storage()
 
 st.markdown("""
 <h1 style="text-align: center;">🏆 GLOBAL LEADERBOARD</h1>

@@ -4,12 +4,10 @@ My Predictions page - View prediction history with FIFA 2026 design
 import streamlit as st
 import pandas as pd
 from src.config import Config
-from src.storage import Storage
+from src.storage import get_storage
 
-# Initialize
 config = Config()
-storage = Storage(config)
-storage.initialize_data_layer()
+storage = get_storage()
 
 st.markdown("""
 <h1 style="text-align: center;">📊 MY PREDICTIONS</h1>

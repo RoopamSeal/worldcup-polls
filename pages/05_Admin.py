@@ -4,12 +4,10 @@ Admin page - Administrative functions with PostgreSQL backend
 import streamlit as st
 import pandas as pd
 from src.config import Config
-from src.storage import Storage
+from src.storage import get_storage
 
-# Initialize
 config = Config()
-storage = Storage(config)
-storage.initialize_data_layer()
+storage = get_storage()
 
 st.markdown("""
 <h1 style="text-align: center;">⚙️ ADMIN CONSOLE</h1>

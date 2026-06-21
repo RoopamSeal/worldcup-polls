@@ -17,10 +17,14 @@ class Database:
     def __init__(self):
         """Initialize connection pool using Streamlit Secrets"""
         self.db_url = st.secrets["database"]["URL"]
+        # Supabase (and most cloud Postgres) requires SSL — add if not already set
+        if "sslmode" not in self.db_url:
+            sep = "&" if "?" in self.db_url else "?"
+            self.db_url += f"{sep}sslmode=require"
         try:
-            # Create a pool of 1 to 10 connections
+            # Keep pool small — Supabase free tier allows ~20 total connections
             self.connection_pool = psycopg2.pool.SimpleConnectionPool(
-                1, 10, self.db_url
+                1, 3, self.db_url, connect_timeout=10
             )
         except Exception as e:
             logger.error(f"Failed to create connection pool: {e}")
