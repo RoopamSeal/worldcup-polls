@@ -4,12 +4,26 @@ Storage layer bridging frontend calls to PostgreSQL database
 import uuid
 import logging
 import datetime
+import streamlit as st
 from typing import Dict, List, Optional, Any
 from src.db import Database
 from src.config import Config
 from src.schema import DatabaseSchema
 
 logger = logging.getLogger(__name__)
+
+
+@st.cache_resource
+def get_storage() -> "Storage":
+    """Return a single cached Storage instance shared across all pages and reruns.
+
+    Prevents a new connection pool being created on every Streamlit rerun,
+    which would exhaust Supabase's free-tier connection limit.
+    """
+    config = Config()
+    storage = Storage(config)
+    storage.initialize_data_layer()
+    return storage
 
 
 class Storage:

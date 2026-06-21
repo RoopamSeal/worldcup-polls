@@ -4,7 +4,7 @@ FIFA World Cup 2026 Prediction Platform - App Shell & Navigation
 import logging
 import streamlit as st
 from src.config import Config
-from src.storage import Storage
+from src.storage import get_storage
 from src.fixtures import FixtureLoader
 
 logging.basicConfig(
@@ -20,10 +20,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize config, storage, and fixtures
+# Initialize config, storage, and fixtures (cached — single pool for entire app)
 config = Config()
-storage = Storage(config)
-storage.initialize_data_layer()
+storage = get_storage()
 
 fixture_loader = FixtureLoader(config)
 fixture_loader.ensure_fixtures_loaded(storage)

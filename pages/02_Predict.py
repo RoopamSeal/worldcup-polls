@@ -5,22 +5,16 @@ import streamlit as st
 import pandas as pd
 from datetime import date, datetime, timezone, timedelta
 from src.config import Config
-from src.storage import Storage
+from src.storage import get_storage
 from src.predictions import PredictionManager
 
-# ==========================================
-# 1. CRITICAL: Initialize Session State
-# ==========================================
-# This prevents crashes if the user refreshes the page directly
 if 'user_id' not in st.session_state:
     st.session_state.user_id = None
 if 'user_name' not in st.session_state:
     st.session_state.user_name = None
 
-# Initialize backend (Removed the broken FixtureLoader)
 config = Config()
-storage = Storage(config)
-storage.initialize_data_layer()
+storage = get_storage()
 pred_manager = PredictionManager(config, storage)
 
 st.markdown("""
