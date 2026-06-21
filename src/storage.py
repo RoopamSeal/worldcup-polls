@@ -39,27 +39,28 @@ class Storage:
         api = FootballAPI()
         matches = api.fetch_finished_matches(competition_code)
         
+        count = 0
         for match in matches:
-            # Match IDs from API are usually integers; convert to string for your DB
             match_id = str(match['id'])
             
-            # Determine winner
+            # Use safe get to avoid KeyErrors if API response varies
             score_info = match.get('score', {})
-            winner = score_info.get('winner') # 'HOME_TEAM', 'AWAY_TEAM', 'DRAW'
+            winner_key = score_info.get('winner')
             
-            if winner == 'HOME_TEAM':
+            if winner_key == 'HOME_TEAM':
                 winner_name = match['homeTeam']['name']
-            elif winner == 'AWAY_TEAM':
+            elif winner_key == 'AWAY_TEAM':
                 winner_name = match['awayTeam']['name']
             else:
                 winner_name = 'draw'
                 
-            # Update the database
-            # Ensure these methods exist in your Storage class
-            self.save_match_result(match_id, winner_name)
-            self.update_match_status(match_id, 'completed')
+            # Only update if we don't have this result yet
+            if not self.get_match_result(match_id):
+                self.save_match_result(match_id, winner_name)
+                self.update_match_status(match_id, 'completed')
+                count += 1
         
-        logger.info(f"Synced {len(matches)} results from API")
+        logger.info(f"Synced {count} new results from API")
         
         for match in matches:
             match_id = str(match['id'])
@@ -153,8 +154,10 @@ class Storage:
         self.db.update("matches", {"status": status}, "match_id = %s", (match_id,))
 
     def save_match_result(self, match_id: str, winner: str) -> None:
+        """Saves final match result."""
+        # Use result_id as the primary key as per your database schema
         result_data = {
-            "result_id": str(uuid.uuid4()),
+            "result_id": str(uuid.uuid4()), 
             "match_id": match_id,
             "actual_winner": winner,
             "result_timestamp": str(datetime.datetime.now())
@@ -167,10 +170,13 @@ class Storage:
         )
 
     def load_fixtures(self, df) -> None:
+        """Populates fixtures from DataFrame into the database."""
         for _, row in df.iterrows():
             match_date = str(row['match_date'])
             kickoff = str(row['kickoff_time'])
+            # Ensure kickoff_time_ist is correctly pulled from the CSV column
             kickoff_ist = str(row.get('kickoff_time_ist', kickoff))
+            
             match_data = {
                 'match_id': str(row['match_id']),
                 'team_1': str(row['team_1']),
