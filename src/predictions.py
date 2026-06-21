@@ -42,7 +42,7 @@ class PredictionManager:
                 
                 # Parse ET time
                 dt_str = f"{match_date} {kickoff_time}"
-                match_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+                match_dt = datetime.strptime(str(dt_str)[:16], "%Y-%m-%d %H:%M")
                 
                 # Convert to IST
                 try:
