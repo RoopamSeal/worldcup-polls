@@ -9,6 +9,17 @@ from src.storage import get_storage
 config = Config()
 storage = get_storage()
 
+# --- ADD THE SYNC CODE HERE ---
+if "synced_today" not in st.session_state:
+    with st.spinner("Auto-syncing results from API..."):
+        try:
+            storage.sync_results_from_api("WC")
+            st.session_state.synced_today = True
+            st.success("✅ Auto-sync complete!")
+        except Exception as e:
+            st.error(f"Auto-sync failed: {e}")
+# ------------------------------
+
 st.markdown("""
 <h1 style="text-align: center;">⚙️ ADMIN CONSOLE</h1>
 <p style="text-align: center; color: #e53238; font-size: 1rem;">
