@@ -170,6 +170,7 @@ class Storage:
         for _, row in df.iterrows():
             match_date = str(row['match_date'])
             kickoff = str(row['kickoff_time'])
+            kickoff_ist = str(row.get('kickoff_time_ist', kickoff))
             match_data = {
                 'match_id': str(row['match_id']),
                 'team_1': str(row['team_1']),
