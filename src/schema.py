@@ -1,5 +1,5 @@
 """
-PostgreSQL Database Schema and Initialization for Supabase
+PostgreSQL Database Schema and Initialization
 """
 import psycopg2
 import streamlit as st
@@ -9,14 +9,23 @@ logger = logging.getLogger(__name__)
 
 class DatabaseSchema:
     """Database schema management for FIFA 2026 Platform"""
-    
+
     def __init__(self):
-        self.db_url = st.secrets["database"]["URL"]
-    
+        db = st.secrets["database"]
+        self.conn_params = dict(
+            host=db["HOST"],
+            port=int(db.get("PORT", 5432)),
+            user=db["USER"],
+            password=db["PASSWORD"],
+            dbname=db["DBNAME"],
+            sslmode="require",
+            connect_timeout=10,
+        )
+
     def init_database(self) -> bool:
         """Initializes database tables, relations, and indexes in PostgreSQL."""
         try:
-            with psycopg2.connect(self.db_url) as conn:
+            with psycopg2.connect(**self.conn_params) as conn:
                 with conn.cursor() as cursor:
                     # ============ USERS TABLE ============
                     cursor.execute("""
@@ -93,7 +102,7 @@ class DatabaseSchema:
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_predictions_user ON predictions(user_id)")
                     
                 conn.commit()
-                logger.info("✅ PostgreSQL database schema initialized successfully in Supabase!")
+                logger.info("✅ PostgreSQL database schema initialized successfully!")
                 return True
         
         except Exception as e:
