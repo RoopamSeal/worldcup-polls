@@ -80,7 +80,7 @@ try:
     if st.session_state.get('user_id'):
         st.markdown("---")
         st.markdown("<h3 style='color:#1a472a; border:none;'>👤 Your Ranking</h3>", unsafe_allow_html=True)
-        user_rank = storage.get_user_rank(st.session_state.user_id)
+        user_rank = storage.get_user_stats(st.session_state.user_id)
         if user_rank:
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("🏅 Rank",    f"#{user_rank['rank']}")
