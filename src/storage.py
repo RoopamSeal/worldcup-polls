@@ -107,15 +107,28 @@ class Storage:
 
     # ============ PREDICTION METHODS ============
     def create_prediction(self, prediction_id: str, user_id: str, match_id: str, predicted_winner: str, timestamp: str = None) -> bool:
-        """Create a prediction with backwards compatibility."""
-        pred_data = {
-            'prediction_id': prediction_id or str(uuid.uuid4()),
-            'user_id': user_id,
-            'match_id': match_id,
-            'predicted_winner': predicted_winner,
-            'prediction_timestamp': timestamp or datetime.datetime.now().isoformat()
-        }
-        return self.db.insert("predictions", pred_data) is not None
+        """Insert a prediction row; raises on DB error so callers can surface it."""
+        pred_id = prediction_id or str(uuid.uuid4())
+        ts = timestamp or datetime.datetime.now().isoformat()
+        conn = self.db._get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO predictions
+                           (prediction_id, user_id, match_id, predicted_winner, prediction_timestamp)
+                       VALUES (%s, %s, %s, %s, %s)
+                       ON CONFLICT (match_id, user_id) DO NOTHING""",
+                    (pred_id, user_id, match_id, predicted_winner, ts)
+                )
+                inserted = cur.rowcount > 0
+            conn.commit()
+            return inserted
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"create_prediction error: {e}")
+            raise
+        finally:
+            self.db._put_connection(conn)
 
     def get_prediction(self, match_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         return self.db.fetch_one(

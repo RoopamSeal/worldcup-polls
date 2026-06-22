@@ -52,25 +52,29 @@ class PredictionManager:
             
             # Create prediction
             pred_id = str(uuid.uuid4())
-            
+
             try:
-                success = self.storage.create_prediction(
+                inserted = self.storage.create_prediction(
                     pred_id,
                     user_id,
                     match_id,
                     predicted_winner,
                     datetime.now(timezone.utc).isoformat()
                 )
-                
-                if success:
+
+                if inserted:
                     logger.info(f"Prediction created: {pred_id}")
                     return True, f"✅ Predicted {predicted_winner}!", pred_id
-                else:
-                    return False, "Failed to save", None
-            
+
+                # rowcount=0 means ON CONFLICT DO NOTHING fired — prediction already exists
+                existing = self.storage.get_prediction(match_id, user_id)
+                if existing:
+                    return False, "Already predicted", None
+                return False, "Could not save prediction — please try again", None
+
             except Exception as e:
                 logger.error(f"Error creating prediction: {e}")
-                return False, f"Error: {str(e)}", None
+                return False, f"DB error: {str(e)}", None
         
         except Exception as e:
             logger.error(f"Error in make_prediction: {e}")
