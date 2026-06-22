@@ -301,6 +301,49 @@ class Storage:
             row['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
         return results
 
+    def get_user_rank(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Gets the specific rank and stats for a single user using a Common Table Expression (CTE)."""
+        try:
+            query = """
+            WITH RankedUsers AS (
+                SELECT 
+                    u.user_id,
+                    u.user_name,
+                    COUNT(p.prediction_id) as total_predictions,
+                    COALESCE(SUM(CASE WHEN p.predicted_winner = r.actual_winner THEN 1 ELSE 0 END), 0) as correct_predictions,
+                    COALESCE(SUM(
+                        CASE 
+                            WHEN p.predicted_winner = r.actual_winner AND r.actual_winner != 'draw' THEN 3
+                            WHEN p.predicted_winner = r.actual_winner AND r.actual_winner = 'draw' THEN 2
+                            ELSE 0
+                        END
+                    ), 0) as total_points,
+                    RANK() OVER (
+                        ORDER BY COALESCE(SUM(
+                            CASE 
+                                WHEN p.predicted_winner = r.actual_winner AND r.actual_winner != 'draw' THEN 3
+                                WHEN p.predicted_winner = r.actual_winner AND r.actual_winner = 'draw' THEN 2
+                                ELSE 0
+                            END
+                        ), 0) DESC
+                    ) as rank
+                FROM users u
+                LEFT JOIN predictions p ON u.user_id = p.user_id
+                LEFT JOIN match_results r ON p.match_id = r.match_id
+                GROUP BY u.user_id, u.user_name
+            )
+            SELECT * FROM RankedUsers WHERE user_id = %s
+            """
+            result = self.db.fetch_one(query, (user_id,))
+            if result:
+                total = result['total_predictions']
+                correct = result['correct_predictions']
+                result['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
+            return result
+        except Exception as e:
+            logger.error(f"Error getting user rank: {e}")
+            return None
+
     def get_tournament_stats(self) -> Dict[str, Any]:
         return {
             "Total Users": self.db.count("users"),
