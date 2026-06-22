@@ -282,57 +282,66 @@ else:
         if matches_df.empty:
             st.info("No matches scheduled yet")
         else:
-            IST = timezone(timedelta(hours=5, minutes=30))
-            today_ist_str = datetime.now(IST).strftime('%Y-%m-%d')
+            # Use EST (tournament host timezone) for "today"
+            EST = timezone(timedelta(hours=-5))
+            today_est_str = datetime.now(EST).strftime('%Y-%m-%d')
 
-            # Ensure match_date_ist exists — fallback to match_date if SQL column is absent
-            if 'match_date_ist' not in matches_df.columns:
-                matches_df['match_date_ist'] = matches_df['match_date']
+            # Defensive fallbacks for IST display columns
             if 'kickoff_time_ist' not in matches_df.columns:
                 matches_df['kickoff_time_ist'] = matches_df['kickoff_time']
+            if 'match_date_ist' not in matches_df.columns:
+                matches_df['match_date_ist'] = matches_df['match_date']
 
+            # Filter by tournament calendar date (match_date) — always reliable
             active_matches = matches_df[
                 matches_df['status'].isin(['scheduled', 'live']) &
-                (matches_df['match_date_ist'].astype(str) >= today_ist_str)
+                (matches_df['match_date'].astype(str) >= today_est_str)
             ].copy()
+
             if active_matches.empty:
-                st.info("No upcoming matches")
+                st.info("No upcoming matches scheduled.")
             else:
-                # Group and sort by IST date — both columns are ISO strings from DB
-                active_matches = active_matches.sort_values(['match_date_ist', 'kickoff_time_ist'])
-                match_dates = sorted(str(d) for d in active_matches['match_date_ist'].unique())
+                active_matches = active_matches.sort_values(['match_date', 'kickoff_time'])
+                match_dates = sorted(active_matches['match_date'].astype(str).unique())
 
                 default_idx = next(
-                    (i for i, d in enumerate(match_dates) if d >= today_ist_str), 0
+                    (i for i, d in enumerate(match_dates) if d >= today_est_str), 0
                 )
 
                 selected_date = st.selectbox(
-                    "📅 Select Match Date (IST)",
+                    "📅 Select Match Date",
                     match_dates,
                     index=default_idx,
                     format_func=lambda d: pd.to_datetime(d).strftime('%B %d, %Y')
                 )
-                day_matches = active_matches[active_matches['match_date_ist'].astype(str) == selected_date]
+                day_matches = active_matches[active_matches['match_date'].astype(str) == selected_date]
 
                 st.markdown(
                     f"<p style='color:#666; margin:0.5rem 0 1rem;'>📋 <strong>{len(day_matches)}</strong> match(es) on "
-                    f"<strong>{pd.to_datetime(selected_date).strftime('%B %d, %Y')} IST</strong></p>",
+                    f"<strong>{pd.to_datetime(selected_date).strftime('%B %d, %Y')}</strong></p>",
                     unsafe_allow_html=True,
                 )
 
-                if day_matches.empty:
-                    st.info(f"No matches on {selected_date}. Try another date.")
-                else:
-                    for _, match in day_matches.iterrows():
-                        # kickoff_time_ist is pre-stored in DB (HH:MM, 24-hour IST)
-                        kickoff_display = str(match.get('kickoff_time_ist', match['kickoff_time'])) + ' IST'
-                        st.markdown(f"""
+                for _, match in day_matches.iterrows():
+                    # IST kickoff from DB; fall back to stored time if null
+                    ist_time = match.get('kickoff_time_ist') or match.get('kickoff_time', '')
+                    kickoff_display = str(ist_time).replace('None', '').replace('nan', '').strip() or str(match.get('kickoff_time', ''))
+                    kickoff_display += ' IST'
+
+                    # IST date for display; fall back to match_date if null
+                    date_display = match.get('match_date_ist') or match.get('match_date', '')
+                    if not date_display or str(date_display) in ('None', 'nan', 'NaT'):
+                        date_display = match.get('match_date', '')
+
+                    venue = match.get('venue') or ''
+
+                    st.markdown(f"""
 <div class="match-card">
 <div style="display:grid; grid-template-columns:2fr 1fr 2fr 1.5fr; gap:1rem; align-items:center;">
 <div style="text-align:right;"><h4 style="color:#1a472a; margin:0; font-size:1.1rem; font-weight:700;">{match['team_1']}</h4></div>
 <div style="text-align:center;"><span style="background:#ffb81c; color:#1a472a; padding:0.5rem 0.8rem; border-radius:0.4rem; font-weight:700; font-size:0.85rem;">vs</span></div>
 <div style="text-align:left;"><h4 style="color:#1a472a; margin:0; font-size:1.1rem; font-weight:700;">{match['team_2']}</h4></div>
-<div style="text-align:center;"><p style="color:#666; margin:0; font-size:0.9rem;">📅 {match.get('match_date_ist', match['match_date'])}<br>🕐 {kickoff_display}<br>📍 {match['venue']}</p></div>
+<div style="text-align:center;"><p style="color:#666; margin:0; font-size:0.9rem;">📅 {date_display}<br>🕐 {kickoff_display}<br>📍 {venue}</p></div>
 </div>
 <div style="margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid #e0e0e0;"><span style="background:#e53238; color:white; padding:0.3rem 0.6rem; border-radius:0.3rem; font-size:0.8rem; font-weight:600;">{match['stage']}</span></div>
 </div>

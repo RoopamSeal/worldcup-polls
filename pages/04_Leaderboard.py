@@ -36,6 +36,10 @@ try:
 
     df = pd.DataFrame(leaderboard)
 
+    # Warn if no one has points yet (results pending)
+    if df['total_points'].sum() == 0:
+        st.info("⏳ Match results haven't been entered yet — rankings will update once today's results are recorded.")
+
     # ── Podium (top 3) ─────────────────────────────────────────────
     st.markdown("<h3 style='color:#1a472a; border:none;'>🥇🥈🥉 Podium</h3>", unsafe_allow_html=True)
     podium_cols = st.columns(3)
