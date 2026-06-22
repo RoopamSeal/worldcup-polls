@@ -301,9 +301,8 @@ class Storage:
             row['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
         return results
 
-
-    def get_user_stats(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Gets the specific rank and stats for a single user."""
+    def get_user_rank(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Gets the specific rank and stats for a single user using a Common Table Expression (CTE)."""
         try:
             query = """
             WITH RankedUsers AS (
@@ -327,7 +326,7 @@ class Storage:
                                 ELSE 0
                             END
                         ), 0) DESC
-                    ) as rank
+                    ) as player_rank
                 FROM users u
                 LEFT JOIN predictions p ON u.user_id = p.user_id
                 LEFT JOIN match_results r ON p.match_id = r.match_id
@@ -335,12 +334,21 @@ class Storage:
             )
             SELECT * FROM RankedUsers WHERE user_id = %s
             """
-            result = self.db.fetch_one(query, (user_id,))
-            if result:
-                total = result['total_predictions']
-                correct = result['correct_predictions']
+            row = self.db.fetch_one(query, (user_id,))
+            
+            if row:
+                # Safely cast the database row to a standard Python dictionary
+                result = dict(row)
+                total = result.get('total_predictions', 0)
+                correct = result.get('correct_predictions', 0)
+                
+                # Map the safe 'player_rank' SQL column back to the 'rank' key the frontend expects
+                result['rank'] = result.get('player_rank', 0)
                 result['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
-            return result
+                
+                return result
+                
+            return None
         except Exception as e:
             logger.error(f"Error getting user rank: {e}")
             return None
