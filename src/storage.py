@@ -302,7 +302,7 @@ class Storage:
         return results
 
 
-    def get_user_rank(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_user_stats(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Gets the specific rank and stats for a single user."""
         try:
             query = """
@@ -344,11 +344,6 @@ class Storage:
         except Exception as e:
             logger.error(f"Error getting user rank: {e}")
             return None
-
-
-
-
-
     
     def get_tournament_stats(self) -> Dict[str, Any]:
         return {
