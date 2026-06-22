@@ -274,8 +274,11 @@ else:
                 st.info("No upcoming matches")
             else:
                 active_matches['match_datetime'] = pd.to_datetime(
-                    active_matches['match_date'] + ' ' + active_matches['kickoff_time']
-                )
+                    active_matches['match_datetime'], errors='coerce'
+                ).fillna(pd.to_datetime(
+                    active_matches['match_date'] + ' ' + active_matches['kickoff_time'],
+                    format='mixed', errors='coerce'
+                ))
                 active_matches = active_matches.sort_values('match_datetime')
                 match_dates = sorted(pd.to_datetime(active_matches['match_date']).dt.date.unique())
 

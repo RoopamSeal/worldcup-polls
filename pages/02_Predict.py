@@ -71,7 +71,9 @@ try:
     # Filter: scheduled AND kickoff has not yet passed in EST
     def is_upcoming(m):
         d = m.get('match_date', '')
-        t = m.get('kickoff_time', '00:00:00')
+        t = str(m.get('kickoff_time', '00:00')).strip()
+        if len(t) == 5:   # HH:MM → HH:MM:SS
+            t += ':00'
         if m.get('status', '').lower() != 'scheduled':
             return False
         if d > today_est_str:
@@ -109,15 +111,15 @@ try:
 
     # Display matches
     for match in day_matches:
-        # Convert kickoff from EST to IST for display
+        # Convert kickoff from EST to IST for display (handles HH:MM and HH:MM:SS)
         try:
-            kickoff_est = datetime.strptime(
-                f"{match['match_date']} {match['kickoff_time']}", "%Y-%m-%d %H:%M:%S"
-            ).replace(tzinfo=EST)
+            kt = str(match['kickoff_time']).strip()
+            fmt = "%Y-%m-%d %H:%M:%S" if len(kt) > 5 else "%Y-%m-%d %H:%M"
+            kickoff_est = datetime.strptime(f"{match['match_date']} {kt}", fmt).replace(tzinfo=EST)
             kickoff_ist = kickoff_est.astimezone(timezone(IST_OFFSET))
             kickoff_display = kickoff_ist.strftime('%I:%M %p IST')
         except Exception:
-            kickoff_display = match['kickoff_time'] + " IST"
+            kickoff_display = match.get('kickoff_time_ist', match['kickoff_time']) + " IST"
 
         # Check prediction
         pred = storage.get_prediction(match['match_id'], st.session_state.user_id)
