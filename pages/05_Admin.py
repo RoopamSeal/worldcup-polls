@@ -9,17 +9,6 @@ from src.storage import get_storage
 config = Config()
 storage = get_storage()
 
-# --- ADD THE SYNC CODE HERE ---
-if "synced_today" not in st.session_state:
-    with st.spinner("Auto-syncing results from API..."):
-        try:
-            storage.sync_results_from_api("WC")
-            st.session_state.synced_today = True
-            st.success("✅ Auto-sync complete!")
-        except Exception as e:
-            st.error(f"Auto-sync failed: {e}")
-# ------------------------------
-
 st.markdown("""
 <h1 style="text-align: center;">⚙️ ADMIN CONSOLE</h1>
 <p style="text-align: center; color: #e53238; font-size: 1rem;">
@@ -83,33 +72,25 @@ with tab2:
         winner = st.radio("Winner", [selected_match['team_1'], selected_match['team_2'], 'draw'], horizontal=True)
         
         if st.button("💾 Save Result", use_container_width=True, type="primary"):
-            # 1. Update Match Status
-            storage.db.update("matches", {"status": "completed"}, "match_id = ?", (selected_match['match_id'],))
-            
-            # 2. Insert Match Result
-            import uuid
-            result_data = {
-                "result_id": str(uuid.uuid4()),
-                "match_id": selected_match['match_id'],
-                "actual_winner": winner,
-                "result_timestamp": pd.Timestamp.now().isoformat()
-            }
-            storage.db.insert("match_results", result_data)
-            
-            # 3. Points calculation logic would trigger here (Automated by your SQL logic)
-            st.success(f"✅ Result saved for {selected_match['team_1']} vs {selected_match['team_2']}!")
+            ok = storage.save_result(selected_match['match_id'], winner)
+            if ok:
+                st.success(f"✅ Result saved for {selected_match['team_1']} vs {selected_match['team_2']}!")
+                st.rerun()
+            else:
+                st.error("❌ Failed to save result. Check logs.")
     else:
         st.info("No scheduled matches available.")
 
 # ========== TAB 3: Maintenance ==========
-# ========== TAB 3: Maintenance ==========
 with tab3:
     st.markdown("## 🔧 Maintenance")
-    
-    # Corrected indentation for these lines:
+
     if st.button("🔄 Sync Results from API"):
-        storage.sync_results_from_api("WC") # "WC" is the league code for World Cup
-        st.success("Synced!")
+        try:
+            updated = storage.sync_results_from_api("WC")
+            st.success(f"✅ Synced! {updated} result(s) updated.")
+        except Exception as e:
+            st.error(f"Sync failed: {e}")
         
     if st.button("🔴 RESET ALL TABLES (DANGER)", use_container_width=True):
         if st.checkbox("I am absolutely sure"):

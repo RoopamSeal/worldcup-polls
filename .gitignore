@@ -1,0 +1,15 @@
+# Secrets — never commit real credentials
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Data / local artifacts
+*.db
+silver/
+gold/
