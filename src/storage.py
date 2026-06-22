@@ -294,6 +294,7 @@ class Storage:
                 u.user_id,
                 u.user_name,
                 COUNT(p.prediction_id) AS total_predictions,
+                COUNT(r.match_id) AS resolved_predictions,
                 COALESCE(SUM(CASE WHEN p.predicted_winner = r.actual_winner THEN 1 ELSE 0 END), 0) AS correct_predictions,
                 COALESCE(SUM(
                     CASE
@@ -318,9 +319,9 @@ class Storage:
         """
         results = self.db.fetch_all(query)
         for row in results:
-            total = row['total_predictions']
-            correct = row['correct_predictions']
-            row['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
+            resolved = row.get('resolved_predictions', 0) or 0
+            correct = row.get('correct_predictions', 0) or 0
+            row['accuracy_percentage'] = round((correct / resolved * 100), 2) if resolved > 0 else 0.0
         return results
 
     def get_user_rank(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -332,6 +333,7 @@ class Storage:
                     u.user_id,
                     u.user_name,
                     COUNT(p.prediction_id) AS total_predictions,
+                    COUNT(r.match_id) AS resolved_predictions,
                     COALESCE(SUM(CASE WHEN p.predicted_winner = r.actual_winner THEN 1 ELSE 0 END), 0) AS correct_predictions,
                     COALESCE(SUM(
                         CASE
@@ -356,16 +358,13 @@ class Storage:
             SELECT * FROM ranked WHERE user_id = %s
             """
             row = self.db.fetch_one(query, (user_id,))
-            
+
             if row:
-                # Safely cast the database row to a standard Python dictionary
                 result = dict(row)
-                total = result.get('total_predictions', 0)
-                correct = result.get('correct_predictions', 0)
-                
-                # Map the safe 'player_rank' SQL column back to the 'rank' key the frontend expects
+                resolved = result.get('resolved_predictions', 0) or 0
+                correct = result.get('correct_predictions', 0) or 0
                 result['rank'] = result.get('player_rank', 0)
-                result['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
+                result['accuracy_percentage'] = round((correct / resolved * 100), 2) if resolved > 0 else 0.0
                 
                 return result
                 
