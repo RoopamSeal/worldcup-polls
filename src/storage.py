@@ -190,12 +190,21 @@ class Storage:
     def get_result(self, match_id: str) -> Optional[Dict[str, Any]]:
         return self.db.fetch_one("SELECT * FROM match_results WHERE match_id = %s", (match_id,))
 
+
     def sync_results_from_api(self, competition_code: str = "WC") -> int:
-        """Fetch finished match results and map them securely to Neon."""
+        """Diagnostic version: Prints exactly what is happening to the console."""
         try:
             from src.api import FootballAPI
             api = FootballAPI()
+            
+            print(f"\n--- STARTING API SYNC FOR {competition_code} ---")
             api_matches = api.fetch_finished_matches(competition_code)
+            
+            print(f"DEBUG 1: API returned {len(api_matches)} finished matches.")
+            if len(api_matches) == 0:
+                print("🚨 STOPPING: The API found 0 finished matches for this competition code. (Check the season/code!)")
+                return 0
+                
             updated = 0
             
             for m in api_matches:
@@ -203,21 +212,28 @@ class Storage:
                 away = m.get('awayTeam', {}).get('name', '')
                 api_winner = m.get('score', {}).get('winner')
                 
+                print(f"\nDEBUG 2: Checking API Match -> {home} vs {away} (Winner: {api_winner})")
+                
                 if not api_winner or not home or not away:
+                    print("  -> SKIPPED: Missing winner or team names in API data.")
                     continue
                     
-                # Fetch match ID and exact DB team names using Fuzzy Match
+                # Search the DB
+                search_home = f"%{home[:5].lower()}%"
+                search_away = f"%{away[:5].lower()}%"
+                print(f"  -> Searching DB for teams matching: '{search_home}' and '{search_away}'")
+                
                 db_match = self.db.fetch_one(
                     """SELECT match_id, team_1, team_2 FROM matches WHERE status = 'scheduled'
                        AND (
                            (LOWER(team_1) LIKE %s AND LOWER(team_2) LIKE %s)
                            OR (LOWER(team_1) LIKE %s AND LOWER(team_2) LIKE %s)
                        )""",
-                    (f"%{home[:5].lower()}%", f"%{away[:5].lower()}%",
-                     f"%{away[:5].lower()}%", f"%{home[:5].lower()}%")
+                    (search_home, search_away, search_away, search_home)
                 )
                 
                 if db_match:
+                    print(f"  -> ✅ MATCH FOUND IN DB: {db_match['team_1']} vs {db_match['team_2']}")
                     db_team1 = db_match['team_1']
                     db_team2 = db_match['team_2']
                     
@@ -229,18 +245,22 @@ class Storage:
                         actual_winner = db_team1 if db_team1.lower().startswith(away[:4].lower()) else db_team2
                     
                     if self.save_result(db_match['match_id'], actual_winner):
+                        print(f"  -> 💾 SAVED TO NEON: Winner is {actual_winner}")
                         updated += 1
-                        
-            logger.info(f"Successfully synced {updated} results from API.")
+                    else:
+                        print("  -> ❌ FAILED TO SAVE TO NEON (Check your save_result SQL syntax)")
+                else:
+                    print("  -> ❌ NOT FOUND IN DB: Either the names don't match, or status is not 'scheduled'.")
+                    
+            print(f"--- SYNC COMPLETE: Updated {updated} matches ---\n")
             return updated
             
-        except ImportError:
-            logger.error("Could not import API module")
-            return 0
         except Exception as e:
+            print(f"🚨 CRITICAL ERROR IN SYNC: {e}")
             logger.error(f"API sync error: {e}")
             return 0
 
+    
     # ============ LEADERBOARD & ADMIN ============
     def get_leaderboard(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         query = """
