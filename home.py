@@ -7,6 +7,19 @@ from datetime import date
 from src.config import Config
 from src.storage import get_storage
 
+# ==========================================
+# SESSION STATE INITIALIZATION
+# ==========================================
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
+    
+if 'user_name' not in st.session_state:
+    st.session_state.user_name = None
+
+if 'ab_group' not in st.session_state:
+    st.session_state.ab_group = 'control'
+# ==========================================
+
 config = Config()
 storage = get_storage()
 
