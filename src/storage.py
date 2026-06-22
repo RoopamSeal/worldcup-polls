@@ -168,12 +168,22 @@ class Storage:
         result = self.db.fetch_one(query, (user_id,))
         return int(result['total_points']) if result and result['total_points'] else 0
 
+    def get_user_resolved_prediction_count(self, user_id: str) -> int:
+        result = self.db.fetch_one(
+            """SELECT COUNT(*) AS cnt FROM predictions p
+               JOIN match_results r ON p.match_id = r.match_id
+               WHERE p.user_id = %s""",
+            (user_id,)
+        )
+        return int(result['cnt']) if result and result['cnt'] else 0
+
     def get_user_stats(self, user_id: str) -> Dict[str, Any]:
         total_preds = self.get_user_prediction_count(user_id)
         correct_preds = self.get_user_correct_predictions(user_id)
         total_points = self.get_user_total_points(user_id)
-        accuracy = (correct_preds / total_preds * 100) if total_preds > 0 else 0.0
-        
+        resolved_preds = self.get_user_resolved_prediction_count(user_id)
+        accuracy = (correct_preds / resolved_preds * 100) if resolved_preds > 0 else 0.0
+
         return {
             'total_predictions': total_preds,
             'correct_predictions': correct_preds,
