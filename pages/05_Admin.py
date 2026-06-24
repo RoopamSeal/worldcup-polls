@@ -103,3 +103,30 @@ with tab3:
                 st.success("✅ All data wiped except matches.")
             except Exception as e:
                 st.error(f"Error: {e}")
+
+
+import streamlit as st
+from src.storage import get_storage
+from src.email_service import EmailService
+
+storage = get_storage()
+email_svc = EmailService()
+
+st.subheader("✉️ Email Communications")
+if st.button("Send Prediction Reminders", type="primary", width="stretch"):
+    with st.spinner("Finding users and sending emails..."):
+        # Fetch all users (You could write a complex SQL query to find 
+        # users missing predictions, but blasting all users is fine for now)
+        all_users = storage.db.fetch_all("SELECT email FROM users")
+        
+        # Get count of scheduled matches
+        scheduled = storage.db.count("matches", "status = %s", ("scheduled",))
+        
+        if scheduled > 0:
+            success = email_svc.send_prediction_reminder(all_users, scheduled)
+            if success:
+                st.success("✅ Reminders sent successfully!")
+            else:
+                st.error("❌ Failed to send emails. Check your secrets.")
+        else:
+            st.warning("No scheduled matches to remind them about.")
