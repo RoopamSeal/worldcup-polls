@@ -188,8 +188,6 @@ Good luck.
                 f"""
 Hello {name},
 
-Admin has opened an additional reminder.
-
 Don't forget to make today's prediction.
 
 Good luck.
