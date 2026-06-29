@@ -14,8 +14,10 @@ from datetime import datetime, timedelta, timezone
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
-import resend
 
 
 # ==========================================================
@@ -24,9 +26,12 @@ import resend
 
 load_dotenv()
 
-DATABASE_URL  = os.getenv("DATABASE_URL")
-FROM_EMAIL    = os.getenv("FROM_EMAIL")
-resend.api_key = os.getenv("RESEND_API_KEY")
+DATABASE_URL   = os.getenv("DATABASE_URL")
+FROM_EMAIL     = os.getenv("FROM_EMAIL")
+SMTP_USER      = os.getenv("SMTP_USER")
+SMTP_PASSWORD  = os.getenv("SMTP_PASSWORD")
+SMTP_HOST      = "smtp-relay.brevo.com"
+SMTP_PORT      = 587
 
 REMINDER_MINUTES = 60
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -118,13 +123,17 @@ Good luck,
 FIFA World Cup 2026 Predictor
 """
 
+    msg = MIMEMultipart()
+    msg["From"]    = FROM_EMAIL
+    msg["To"]      = recipient
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
     try:
-        resend.Emails.send({
-            "from": FROM_EMAIL,
-            "to": recipient,
-            "subject": subject,
-            "text": body,
-        })
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
         logger.info("Email sent → %s", recipient)
         return True
     except Exception:

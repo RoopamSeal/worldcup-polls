@@ -26,5 +26,6 @@ jobs:
         run: python scripts/send_match_reminders.py
         env:
           DATABASE_URL:     ${{ secrets.DATABASE_URL }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SMTP_USER:     ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           FROM_EMAIL:       ${{ secrets.FROM_EMAIL }}
