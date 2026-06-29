@@ -65,12 +65,13 @@ def get_upcoming_matches(conn):
 
     logger.info("IST now: %s | Window end: %s", now_ist.strftime("%Y-%m-%d %H:%M:%S"), window_end.strftime("%Y-%m-%d %H:%M:%S"))
 
+    # kickoff_time stored in EDT (UTC-4); adding 9h30m converts to IST
     query = """
-    SELECT match_id, team_1, team_2, match_date, kickoff_time, venue
+    SELECT match_id, team_1, team_2, match_date, kickoff_time, kickoff_time_ist, venue
     FROM matches
     WHERE status = 'scheduled'
-      AND (match_date::date + kickoff_time::time) > %s
-      AND (match_date::date + kickoff_time::time) <= %s
+      AND (match_date::date + kickoff_time::time) + interval '9 hours 30 minutes' > %s
+      AND (match_date::date + kickoff_time::time) + interval '9 hours 30 minutes' <= %s
     """
     with conn.cursor() as cur:
         cur.execute(query, (now_ist, window_end))
