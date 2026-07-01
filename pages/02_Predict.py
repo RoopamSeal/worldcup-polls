@@ -30,7 +30,7 @@ st.set_page_config(page_title="Predict", layout="wide")
 st.markdown("""
 <h1 style="text-align: center;">🎯 MAKE YOUR PREDICTIONS</h1>
 <p style="text-align: center; color: #e53238; font-size: 1rem;">
-    Predict the EXACT score for today's matches before kickoff to earn +5 points!
+    Predict today's winner and exact score before kickoff to earn up to +5 points!
 </p>
 """, unsafe_allow_html=True)
 
@@ -96,70 +96,71 @@ try:
 
         pred = storage.get_prediction(match['match_id'], st.session_state.user_id)
 
-        st.markdown(
-            f"<div style='text-align:center; color:#666; margin-bottom:1rem;'>"
-            f"🕐 {kickoff_display} &nbsp;|&nbsp; {match['stage']}</div>", 
-            unsafe_allow_html=True
-        )
-
-        if pred:
-            s1 = pred.get('predicted_score_1')
-            s2 = pred.get('predicted_score_2')
-            score_display = f"({s1} - {s2})" if s1 is not None and s2 is not None else ""
-            
-            st.success(f"✅ Your prediction: **{pred['predicted_winner']}** {score_display}")
-            st.markdown("---")
-            continue
-
-        # Score Input UI
-        col1, col2, col3, col4, col5 = st.columns([3, 2, 1, 2, 3])
+        col_a, col_b = st.columns([3, 1])
+        with col_a:
+            st.markdown(
+                f"**{match['team_1']}** vs **{match['team_2']}** \n"
+                f"🕐 {kickoff_display} &nbsp;|&nbsp; {match['stage']}"
+            )
         
-        with col1:
-            st.markdown(f"<h4 style='text-align:right; color:#1a472a; margin-top:2rem;'>{match['team_1']}</h4>", unsafe_allow_html=True)
-            
-        with col2:
-            score_1 = st.number_input("Score", min_value=0, max_value=20, value=0, key=f"s1_{match['match_id']}", label_visibility="collapsed")
-            
-        with col3:
-            st.markdown("<h4 style='text-align:center; color:#ffb81c; margin-top:0.5rem;'>vs</h4>", unsafe_allow_html=True)
-            
-        with col4:
-            score_2 = st.number_input("Score", min_value=0, max_value=20, value=0, key=f"s2_{match['match_id']}", label_visibility="collapsed")
-            
-        with col5:
-            st.markdown(f"<h4 style='text-align:left; color:#1a472a; margin-top:2rem;'>{match['team_2']}</h4>", unsafe_allow_html=True)
+        # If already predicted, show the result
+        with col_b:
+            if pred:
+                score1 = pred.get('predicted_score_1', 0)
+                score2 = pred.get('predicted_score_2', 0)
+                score_display = f"({score1} - {score2})" if score1 is not None else ""
+                st.success(f"✅ {pred['predicted_winner']} {score_display}")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Single Lock-in Button
-        _, btn_col, _ = st.columns([1, 2, 1])
-        with btn_col:
-            if st.button("🔒 Lock In Prediction", key=f"btn_{match['match_id']}", width="stretch", type="primary"):
+        # If not predicted, show the dual-panel input UI
+        if not pred:
+            with st.container():
+                st.markdown("<div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border: 1px solid #e9ecef;'>", unsafe_allow_html=True)
                 
-                # Automatically calculate the winner based on the inputted scores
-                if score_1 > score_2:
-                    winner = match['team_1']
-                elif score_1 < score_2:
-                    winner = match['team_2']
-                else:
-                    winner = 'draw'
-
-                # Pass the scores to the backend
-                ok, msg, _ = pred_manager.make_prediction(
-                    st.session_state.user_id, 
-                    match['match_id'], 
-                    winner, 
-                    score_1, 
-                    score_2
+                # PANEL 1: Match Outcome
+                st.markdown("**1. Select Match Outcome**")
+                outcome = st.radio(
+                    "Winner",
+                    options=[match['team_1'], "Draw", match['team_2']],
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key=f"outcome_{match['match_id']}"
                 )
                 
-                if ok:
-                    st.success(f"✅ Prediction locked! {winner} ({score_1} - {score_2})")
-                    st.balloons()
-                    st.rerun()
-                else:
-                    st.error(f"Error: {msg}")
+                st.markdown("<br>", unsafe_allow_html=True)
 
+                # PANEL 2: Exact Goals
+                st.markdown("**2. Predict Exact Goals (+5 pts)**")
+                c1, c2 = st.columns(2)
+                with c1:
+                    score_1 = st.number_input(f"{match['team_1']} Goals", min_value=0, max_value=20, value=0, step=1, key=f"s1_{match['match_id']}")
+                with c2:
+                    score_2 = st.number_input(f"{match['team_2']} Goals", min_value=0, max_value=20, value=0, step=1, key=f"s2_{match['match_id']}")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # Submit Button
+                if st.button("🔒 Lock In Prediction", key=f"btn_{match['match_id']}", width="stretch", type="primary"):
+                    
+                    # Map the UI "Draw" back to the database-friendly lowercase 'draw'
+                    winner_val = 'draw' if outcome == 'Draw' else outcome
+
+                    # Pass all variables to the backend
+                    ok, msg, _ = pred_manager.make_prediction(
+                        st.session_state.user_id, 
+                        match['match_id'], 
+                        winner_val,
+                        score_1,
+                        score_2
+                    )
+                    if ok:
+                        st.success("✅ Prediction saved!")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.error(f"Error: {msg}")
+                        
+                st.markdown("</div>", unsafe_allow_html=True)
+                
         st.markdown("---")
 
 except Exception as e:
