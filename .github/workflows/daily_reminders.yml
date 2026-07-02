@@ -25,7 +25,8 @@ jobs:
       - name: Send match reminders
         run: python scripts/send_match_reminders.py
         env:
-          DATABASE_URL:     ${{ secrets.DATABASE_URL }}
-          SMTP_USER:     ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          FROM_EMAIL:       ${{ secrets.FROM_EMAIL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
