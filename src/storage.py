@@ -29,21 +29,25 @@ class Storage:
         for _, row in df.iterrows():
             match_date = str(row['match_date'])
             kickoff = str(row['kickoff_time'])
-            
-            match_data = {
-                'match_id': str(row['match_id']),
-                'team_1': str(row['team_1']),
-                'team_2': str(row['team_2']),
-                'stage': str(row['stage']),
-                'match_date': match_date,
-                'kickoff_time': kickoff,
-                'kickoff_time_ist': str(row.get('kickoff_time_ist', kickoff)),
-                'match_datetime': f"{match_date} {kickoff}",
-                'venue': str(row.get('venue', '')),
-                'status': str(row.get('status', 'scheduled'))
-            }
-            # Using ON CONFLICT logic via raw execution if you want to avoid duplicates
-            self.db.insert("matches", match_data)
+            self.db.execute(
+                """INSERT INTO matches
+                       (match_id, team_1, team_2, stage, match_date, kickoff_time,
+                        kickoff_time_ist, match_datetime, venue, status)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   ON CONFLICT (match_id) DO NOTHING""",
+                (
+                    str(row['match_id']),
+                    str(row['team_1']),
+                    str(row['team_2']),
+                    str(row['stage']),
+                    match_date,
+                    kickoff,
+                    str(row.get('kickoff_time_ist', kickoff)),
+                    f"{match_date} {kickoff}",
+                    str(row.get('venue', '')),
+                    str(row.get('status', 'scheduled'))
+                )
+            )
 
     def get_all_matches(self) -> List[Dict[str, Any]]:
         return self.db.fetch_all("""
@@ -168,12 +172,22 @@ class Storage:
         result = self.db.fetch_one(query, (user_id,))
         return int(result['total_points']) if result and result['total_points'] else 0
 
+    def get_user_resolved_prediction_count(self, user_id: str) -> int:
+        result = self.db.fetch_one(
+            """SELECT COUNT(*) AS cnt FROM predictions p
+               JOIN match_results r ON p.match_id = r.match_id
+               WHERE p.user_id = %s""",
+            (user_id,)
+        )
+        return int(result['cnt']) if result and result['cnt'] else 0
+
     def get_user_stats(self, user_id: str) -> Dict[str, Any]:
         total_preds = self.get_user_prediction_count(user_id)
         correct_preds = self.get_user_correct_predictions(user_id)
         total_points = self.get_user_total_points(user_id)
-        accuracy = (correct_preds / total_preds * 100) if total_preds > 0 else 0.0
-        
+        resolved_preds = self.get_user_resolved_prediction_count(user_id)
+        accuracy = (correct_preds / resolved_preds * 100) if resolved_preds > 0 else 0.0
+
         return {
             'total_predictions': total_preds,
             'correct_predictions': correct_preds,
@@ -296,6 +310,7 @@ class Storage:
                 u.user_id,
                 u.user_name,
                 COUNT(p.prediction_id) AS total_predictions,
+                COUNT(r.match_id) AS resolved_predictions,
                 COALESCE(SUM(CASE WHEN p.predicted_winner = r.actual_winner THEN 1 ELSE 0 END), 0) AS correct_predictions,
                 COALESCE(SUM(
                     CASE
@@ -320,9 +335,9 @@ class Storage:
         """
         results = self.db.fetch_all(query)
         for row in results:
-            total = row['total_predictions']
-            correct = row['correct_predictions']
-            row['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
+            resolved = row.get('resolved_predictions', 0) or 0
+            correct = row.get('correct_predictions', 0) or 0
+            row['accuracy_percentage'] = round((correct / resolved * 100), 2) if resolved > 0 else 0.0
         return results
 
     def get_user_rank(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -334,6 +349,7 @@ class Storage:
                     u.user_id,
                     u.user_name,
                     COUNT(p.prediction_id) AS total_predictions,
+                    COUNT(r.match_id) AS resolved_predictions,
                     COALESCE(SUM(CASE WHEN p.predicted_winner = r.actual_winner THEN 1 ELSE 0 END), 0) AS correct_predictions,
                     COALESCE(SUM(
                         CASE
@@ -358,16 +374,13 @@ class Storage:
             SELECT * FROM ranked WHERE user_id = %s
             """
             row = self.db.fetch_one(query, (user_id,))
-            
+
             if row:
-                # Safely cast the database row to a standard Python dictionary
                 result = dict(row)
-                total = result.get('total_predictions', 0)
-                correct = result.get('correct_predictions', 0)
-                
-                # Map the safe 'player_rank' SQL column back to the 'rank' key the frontend expects
+                resolved = result.get('resolved_predictions', 0) or 0
+                correct = result.get('correct_predictions', 0) or 0
                 result['rank'] = result.get('player_rank', 0)
-                result['accuracy_percentage'] = round((correct / total * 100), 2) if total > 0 else 0.0
+                result['accuracy_percentage'] = round((correct / resolved * 100), 2) if resolved > 0 else 0.0
                 
                 return result
                 
